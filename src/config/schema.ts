@@ -39,6 +39,7 @@ export const settingsSchema = strict({
     hysteresisDeg: z.number().min(0).max(90),
     holdMs: z.number().int().min(0),
     reps: z.number().int().min(1),
+    repTimeoutSec: z.number().positive(),
     minVisibility: z.number().min(0).max(1),
   }),
   giveUp: strict({
@@ -105,10 +106,15 @@ const angleRuleSchema = strict({
   hintHigh: z.string().optional(),
 });
 
+/** [開始秒數, 結束秒數]，結束要比開始晚 */
+const timeRange = z.tuple([seconds, seconds]).refine(([a, b]) => b > a, { error: '結束時間要比開始時間晚（格式：[開始秒數, 結束秒數]）' });
+
 const stepCommon = {
   id: stepId,
   name: z.string().min(1),
+  description: z.string().optional(),
   enabled: z.boolean().optional(),
+  clip: timeRange.optional(),
   angles: z.record(angleId, angleRuleSchema).refine((a) => Object.keys(a).length > 0, {
     error: '至少要列出一個要檢查的角度',
   }),
@@ -150,9 +156,15 @@ const dynamicStepSchema = strict({
 
 export const stepSchema = z.discriminatedUnion('type', [staticStepSchema, dynamicStepSchema]);
 
+const ratio = z.number().min(0).max(1);
+
 export const routineSchema = strict({
   name: z.string().min(1),
-  referenceVideo: z.string().min(1),
+  reference: strict({
+    video: z.string().min(1),
+    area: z.tuple([ratio, ratio]).refine(([a, b]) => b > a, { error: '格式為 [左邊界, 右邊界]，右邊界要比左邊界大（0 = 畫面最左、1 = 最右）' }),
+    fps: z.number().positive().max(60),
+  }),
   steps: z
     .array(stepSchema)
     .min(1)

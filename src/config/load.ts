@@ -40,6 +40,9 @@ export interface ResolvedAngleRule {
 interface ResolvedStepCommon {
   id: string;
   name: string;
+  description?: string;
+  /** 標準畫面循環播放的片段 [開始秒, 結束秒] */
+  clip: [number, number];
   angles: ResolvedAngleRule[];
   timeoutSec: number;
   maxAttempts: number;
@@ -64,7 +67,7 @@ export interface AppConfig {
   angles: AnglesFile['angles'];
   routine: {
     name: string;
-    referenceVideo: string;
+    reference: Routine['reference'];
     /** 只包含啟用中的步驟，依練習順序排列 */
     steps: ResolvedStep[];
   };
@@ -190,13 +193,19 @@ function checkRoutineAngles(routine: Routine, anglesFile: AnglesFile): ConfigErr
 
 // ───────────── 套用預設值 ─────────────
 
+/** 沒有指定 clip 時，示範片段 = 時間點前後各多播這麼多秒 */
+const CLIP_PADDING_SEC = 1;
+
 function resolve(settings: Settings, anglesFile: AnglesFile, routine: Routine): AppConfig {
   const steps: ResolvedStep[] = routine.steps
     .filter((s) => s.enabled !== false)
     .map((s) => {
+      const times = s.type === 'static' ? [s.time] : s.checkpoints.map((c) => c.time);
       const common: ResolvedStepCommon = {
         id: s.id,
         name: s.name,
+        description: s.description,
+        clip: s.clip ?? [Math.max(0, Math.min(...times) - CLIP_PADDING_SEC), Math.max(...times) + CLIP_PADDING_SEC],
         angles: Object.entries(s.angles).map(([id, rule]) => ({
           id,
           def: anglesFile.angles[id]!,
@@ -215,7 +224,7 @@ function resolve(settings: Settings, anglesFile: AnglesFile, routine: Routine): 
   return {
     settings,
     angles: anglesFile.angles,
-    routine: { name: routine.name, referenceVideo: routine.referenceVideo, steps },
+    routine: { name: routine.name, reference: routine.reference, steps },
   };
 }
 

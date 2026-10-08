@@ -1,14 +1,15 @@
 /* 顏色與字級集中在這裡，方便日後統一調整 */
 :root {
-  --bg: #111418;
-  --fg: #f2f4f7;
-  --muted: #9aa4b2;
-  --ok: #3ddc84;
-  --bad: #ff5a5a;
-  --card: #1c2128;
-  --line: #2d333b;
-  --accent: #2f81f7;
-  color-scheme: dark;
+  --bg: #eef4f3;
+  --fg: #0f2a2e;
+  --muted: #5b7276;
+  --ok: #16a34a;
+  --bad: #dc2626;
+  --card: #ffffff;
+  --line: #d5e1e0;
+  --accent: #0f9f8f;
+  --accent-soft: #d5f1ec;
+  color-scheme: light;
   font-family: system-ui, -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif;
   background: var(--bg);
   color: var(--fg);
@@ -144,6 +145,7 @@ button:disabled {
   position: fixed;
   inset: 0;
   background: #000;
+  color: #fff;
   overflow: hidden;
 }
 
@@ -198,7 +200,180 @@ button:disabled {
 
 .hud-exit {
   position: absolute;
+  color: #fff;
+  border: 0;
   top: calc(12px + env(safe-area-inset-top));
   right: calc(12px + env(safe-area-inset-right));
   background: rgba(0, 0, 0, 0.6);
+}
+
+button.big {
+  font-size: 1.3rem;
+  padding: 16px 28px;
+  border-radius: 14px;
+}
+
+.button-link {
+  display: inline-block;
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--fg);
+  text-decoration: none;
+}
+
+/* ── 首頁 ── */
+.home-hero {
+  background: linear-gradient(135deg, #0f9f8f, #23b5a0 60%, #6fd3b8);
+  color: #fff;
+  border-radius: 24px;
+  padding: clamp(20px, 4vw, 40px);
+  box-shadow: 0 8px 24px rgba(15, 159, 143, 0.25);
+}
+
+.home-hero h1 {
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  margin: 0;
+}
+
+.home-kicker {
+  margin: 0;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.home-sub {
+  margin: 4px 0 0;
+  opacity: 0.9;
+}
+
+.home-hero button {
+  border: 0;
+}
+
+.home-hero button.primary {
+  background: #fff;
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.home-hero button:not(.primary) {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.home-status p {
+  margin: 8px 0 0;
+}
+
+.home-hero .muted {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.home-hero .error-banner {
+  background: #fff;
+  color: var(--bad);
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+
+.home-steps {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.home-steps li {
+  display: flex;
+  gap: 14px;
+  background: var(--card);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 1px 6px rgba(15, 42, 46, 0.08);
+}
+
+.home-step-no {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 1.2rem;
+}
+
+.home-step-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.home-step-cond {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  vertical-align: middle;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.tag.dynamic {
+  background: #fdecc8;
+  color: #b45309;
+}
+
+.home-more {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 12px 16px;
+}
+
+.home-more summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* ── 結果頁 ── */
+.finish-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 16px 0 24px;
+}
+
+.finish-stats div {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  box-shadow: 0 1px 6px rgba(15, 42, 46, 0.08);
+}
+
+.finish-stats b {
+  display: block;
+  font-size: clamp(1.8rem, 6vw, 2.8rem);
+  color: var(--accent);
+}
+
+.finish-stats span {
+  color: var(--muted);
+}
+
+.finish table {
+  background: var(--card);
+  border-radius: 12px;
 }

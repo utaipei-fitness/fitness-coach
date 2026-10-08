@@ -1,11 +1,12 @@
 // 設定檔載入與錯誤訊息的測試。
-// 第一個測試會檢查專案裡「真正的」設定檔，所以改完設定檔跑 npm test 也能抓到錯。
+// 第一個測試會檢查專案裡「真正的」設定檔（config/），所以改完設定檔跑 npm test 也能抓到錯。
 import { parse } from 'jsonc-parser';
 import { describe, expect, it } from 'vitest';
 import { loadBundledConfig } from '../src/config/bundled';
 import { parseConfigFiles, type ConfigError } from '../src/config/load';
 
-const raw = import.meta.glob<string>('/config/*.json', { query: '?raw', import: 'default', eager: true });
+// 錯誤訊息的測試用 tests/fixtures/config/ 的固定設定檔，這樣修改正式設定檔不會讓測試壞掉
+const raw = import.meta.glob<string>('/tests/fixtures/config/*.json', { query: '?raw', import: 'default', eager: true });
 const realFiles: Record<string, string> = Object.fromEntries(
   Object.entries(raw).map(([path, text]) => [path.slice(path.lastIndexOf('/') + 1), text]),
 );

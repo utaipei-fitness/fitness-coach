@@ -1,3 +1,5 @@
+import { mkdir, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import qrcode from 'qrcode-terminal';
 import type { Plugin } from 'vite';
@@ -28,11 +30,46 @@ function phoneQrCode(): Plugin {
   };
 }
 
+/**
+ * 開發模式專用：讓「標準動作建置工具」把結果直接存進 generated/ 資料夾。
+ * 只接受 generated/ 底下的 .json 檔名，正式網站沒有這個功能。
+ */
+function saveGeneratedFiles(): Plugin {
+  return {
+    name: 'save-generated-files',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use('/__dev/save-generated', (req, res) => {
+        const name = new URL(req.url ?? '', 'http://localhost').searchParams.get('file') ?? '';
+        if (req.method !== 'POST' || !/^[a-z0-9-]+\.json$/.test(name)) {
+          res.statusCode = 400;
+          res.end('只能用 POST 存 generated/ 底下的 .json 檔');
+          return;
+        }
+        const chunks: Buffer[] = [];
+        req.on('data', (c: Buffer) => chunks.push(c));
+        req.on('end', async () => {
+          try {
+            const dir = resolve(server.config.root, 'generated');
+            await mkdir(dir, { recursive: true });
+            await writeFile(resolve(dir, name), Buffer.concat(chunks));
+            res.end('ok');
+          } catch (err) {
+            res.statusCode = 500;
+            res.end(String(err));
+          }
+        });
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => ({
   // 相對路徑：部署到任何網址底下都能找到檔案
   base: './',
+  // tools/reference.html（標準動作建置工具）只在開發時使用，不會打包進正式網站
   // npm run dev:phone（mode = phone）才開 HTTPS：手機瀏覽器規定 HTTPS 才能開鏡頭
-  plugins: mode === 'phone' ? [basicSsl({ name: 'fitness-coach-dev' }), phoneQrCode()] : [],
+  plugins: [saveGeneratedFiles(), ...(mode === 'phone' ? [basicSsl({ name: 'fitness-coach-dev' }), phoneQrCode()] : [])],
   test: {
     include: ['tests/**/*.test.ts'],
   },

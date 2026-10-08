@@ -1,16 +1,18 @@
 // ═══════════════════════════════════════════════
 // 健身操步驟清單：練習時依照這裡的順序，一次進行一步
 //
-// ⚠ 目前三個步驟是「示範用的暫定內容」，時間點都是暫填。
-//    階段 2 用標準動作建置工具看影片、找出正確時間點後再替換。
+// 標準影片：「久坐運動」示範影片（右半邊的站姿示範者）
 //
 // 每一步的欄位：
 //   id          代號（小寫英文、數字、-），每一步不可重複
 //   name        畫面上顯示的中文名稱
+//   description （可省略）動作說明，顯示在步驟名稱下方
 //   type        "static"  = 靜態：姿勢維持一段時間就通過
 //               "dynamic" = 動態：依序經過各檢查點算一次，做滿次數就通過
 //   time        （靜態）標準影片中這個姿勢的時間點，單位：秒
 //   checkpoints （動態）各檢查點的名稱與時間點，至少 2 個，時間要依序變大
+//   clip        （可省略）標準畫面循環播放的片段 [開始秒數, 結束秒數]
+//               不寫就自動用「時間點前後各 1 秒」
 //   angles      要檢查的角度（代號見 angles.json），每個角度可再設定：
 //                 tolerance 容許角度（±度），不寫就用 settings.json 的預設值
 //                 hintLow   你的角度「比標準小」時顯示的提示
@@ -20,47 +22,109 @@
 // 可省略的欄位（不寫就用 settings.json 的預設值）：
 //   holdMs（靜態維持毫秒）、reps（動態次數）、timeoutSec、maxAttempts
 //   enabled: false 可暫時停用這一步（不用刪掉）
+//
+// 時間點怎麼找：npm run dev 後開 http://localhost:5173/tools/reference.html
+// 改完存檔，目標角度會自動重新計算，不需要其他步驟。
 // ═══════════════════════════════════════════════
 {
-  "name": "國軍操（測試版）",
-  "referenceVideo": "army-exercise.mp4", // 放在 assets/reference/ 的標準影片檔名（建議只用英文和數字）
+  "name": "久坐運動零食",
+
+  "reference": {
+    "video": "jiuzuo-exercise.mp4", // 放在 assets/reference/ 的標準影片檔名
+    "area": [0.5, 1.0],             // 示範者在畫面中的左右範圍（0 = 最左、1 = 最右）；這支影片用右半邊的站姿示範者
+    "fps": 15                       // 擷取骨架時每秒取幾幀（越多越細，但擷取越久、檔案越大）
+  },
 
   "steps": [
     {
-      "id": "arms-side-raise",
-      "name": "兩臂側平舉",
+      "id": "ready",
+      "name": "預備姿勢",
+      "description": "站直、雙手自然放下，讓全身入鏡",
       "type": "static",
-      "time": 5.0,
+      "time": 232.8,
+      "clip": [231.5, 234.0],
       "angles": {
-        "leftShoulderRaise":  { "hintLow": "左手再抬高", "hintHigh": "左手放低一點" },
-        "rightShoulderRaise": { "hintLow": "右手再抬高", "hintHigh": "右手放低一點" },
-        "leftElbow":  { "tolerance": 25, "hintLow": "左手臂打直" },
-        "rightElbow": { "tolerance": 25, "hintLow": "右手臂打直" }
+        "leftShoulderRaise":  { "hintHigh": "左手放下" },
+        "rightShoulderRaise": { "hintHigh": "右手放下" },
+        "leftKnee":  { "hintLow": "左腿站直" },
+        "rightKnee": { "hintLow": "右腿站直" }
       }
     },
     {
-      "id": "arms-overhead",
-      "name": "兩臂上舉放下",
+      "id": "push-sides",
+      "name": "兩側推",
+      "description": "雙手從胸前往身體兩側平推出去，再收回",
       "type": "dynamic",
       "checkpoints": [
-        { "name": "手放下", "time": 10.0 },
-        { "name": "手舉過頭", "time": 11.0 },
-        { "name": "手放下", "time": 12.0 }
+        { "name": "收在胸前", "time": 54.0 },
+        { "name": "往兩側推", "time": 54.4 },
+        { "name": "收回胸前", "time": 54.8 }
       ],
-      "reps": 3,
       "angles": {
-        "leftShoulderRaise":  { "hintLow": "左手再舉高", "hintHigh": "左手放低" },
-        "rightShoulderRaise": { "hintLow": "右手再舉高", "hintHigh": "右手放低" }
+        "leftShoulderRaise":  { "tolerance": 25, "hintLow": "左手抬到肩膀高度", "hintHigh": "左手放低一點" },
+        "rightShoulderRaise": { "tolerance": 25, "hintLow": "右手抬到肩膀高度", "hintHigh": "右手放低一點" },
+        "leftElbow":  { "tolerance": 35, "hintLow": "左手臂推直", "hintHigh": "左手收回胸前" },
+        "rightElbow": { "tolerance": 35, "hintLow": "右手臂推直", "hintHigh": "右手收回胸前" }
       }
     },
     {
-      "id": "side-bend",
-      "name": "體側彎",
-      "type": "static",
-      "time": 20.0,
-      "holdMs": 2000,
+      "id": "push-up",
+      "name": "向上推",
+      "description": "雙手從肩膀往上推到頭頂，再收回",
+      "type": "dynamic",
+      "checkpoints": [
+        { "name": "手在肩膀", "time": 59.6 },
+        { "name": "推到頭頂", "time": 60.0 },
+        { "name": "收回肩膀", "time": 60.4 }
+      ],
       "angles": {
-        "trunkTilt": { "tolerance": 15, "hintLow": "身體再往側邊彎一點", "hintHigh": "身體不要彎太多" }
+        "leftShoulderRaise":  { "tolerance": 25, "hintLow": "左手再往上推", "hintHigh": "左手收低一點" },
+        "rightShoulderRaise": { "tolerance": 25, "hintLow": "右手再往上推", "hintHigh": "右手收低一點" }
+      }
+    },
+    {
+      "id": "squat",
+      "name": "深蹲",
+      "description": "雙腳與肩同寬，屁股往後坐再站起來",
+      "type": "dynamic",
+      "checkpoints": [
+        { "name": "站直", "time": 102.0 },
+        { "name": "蹲下", "time": 103.4 },
+        { "name": "站起", "time": 104.8 }
+      ],
+      "angles": {
+        "leftKnee":  { "tolerance": 25, "hintLow": "蹲淺一點", "hintHigh": "再蹲低一點" },
+        "rightKnee": { "tolerance": 25, "hintLow": "蹲淺一點", "hintHigh": "再蹲低一點" }
+      }
+    },
+    {
+      "id": "side-lunge",
+      "name": "向右側蹲",
+      "description": "右腳往旁邊跨出、右膝彎曲，左腿打直，停住",
+      "type": "static",
+      "time": 177.4,
+      "clip": [175.5, 179.0],
+      "angles": {
+        "rightKnee": { "tolerance": 25, "hintLow": "右膝不用彎那麼多", "hintHigh": "右膝再彎一點" },
+        "leftKnee":  { "tolerance": 20, "hintLow": "左腿打直" },
+        "legSpread": { "tolerance": 20, "hintLow": "右腳再跨開一點", "hintHigh": "雙腳收近一點" }
+      }
+    },
+    {
+      "id": "jumping-jack",
+      "name": "開合跳",
+      "description": "雙腳跳開、雙手往上張開，再併攏",
+      "type": "dynamic",
+      "clip": [203.0, 206.0],
+      "checkpoints": [
+        { "name": "併腿", "time": 204.0 },
+        { "name": "開腿", "time": 204.4 },
+        { "name": "併腿", "time": 204.8 }
+      ],
+      "angles": {
+        "legSpread": { "tolerance": 15, "hintLow": "雙腳再張開一點", "hintHigh": "雙腳收近一點" },
+        "leftShoulderRaise":  { "tolerance": 30, "hintLow": "左手再往上張開", "hintHigh": "左手放低一點" },
+        "rightShoulderRaise": { "tolerance": 30, "hintLow": "右手再往上張開", "hintHigh": "右手放低一點" }
       }
     }
   ]

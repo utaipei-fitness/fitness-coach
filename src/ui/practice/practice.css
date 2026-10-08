@@ -1,0 +1,398 @@
+/* ═══ 練習畫面（淺色、青綠色系，2～3 公尺外也看得清楚） ═══ */
+.practice {
+  --pr-bg: #eef4f3;
+  --pr-card: #ffffff;
+  --pr-ink: #0f2a2e;
+  --pr-sub: #5b7276;
+  --pr-teal: #0f9f8f;
+  --pr-teal-soft: #d5f1ec;
+  --pr-ok: #16a34a;
+  --pr-bad: #dc2626;
+  --pr-warn: #d97706;
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: clamp(6px, 1.2vmin, 14px);
+  padding: calc(clamp(6px, 1.2vmin, 14px) + env(safe-area-inset-top)) calc(clamp(8px, 1.5vmin, 18px) + env(safe-area-inset-right))
+    calc(clamp(6px, 1.2vmin, 14px) + env(safe-area-inset-bottom)) calc(clamp(8px, 1.5vmin, 18px) + env(safe-area-inset-left));
+  background: var(--pr-bg);
+  color: var(--pr-ink);
+  color-scheme: light;
+  overflow: hidden;
+}
+
+/* ── 上方：步驟名稱與進度 ── */
+.pr-header {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 2vmin, 24px);
+  min-width: 0;
+}
+
+.pr-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.pr-step-no {
+  display: inline-block;
+  background: var(--pr-teal);
+  color: #fff;
+  font-weight: 700;
+  font-size: clamp(12px, 2vmin, 18px);
+  padding: 2px 12px;
+  border-radius: 999px;
+}
+
+.pr-step-name {
+  display: inline;
+  white-space: nowrap;
+  margin: 0 0 0 10px;
+  font-size: clamp(22px, 5vmin, 52px);
+  font-weight: 800;
+  vertical-align: middle;
+}
+
+.pr-step-desc {
+  margin: 2px 0 0;
+  color: var(--pr-sub);
+  font-size: clamp(13px, 2.2vmin, 20px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pr-dots {
+  display: flex;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pr-dots li {
+  width: clamp(18px, 3.5vmin, 36px);
+  height: 8px;
+  border-radius: 4px;
+  background: #cfdcdb;
+}
+
+.pr-dots li.current {
+  background: var(--pr-teal);
+}
+.pr-dots li.done {
+  background: var(--pr-ok);
+}
+.pr-dots li.skipped {
+  background: var(--pr-warn);
+}
+
+.pr-tools {
+  display: flex;
+  gap: 8px;
+}
+
+.pr-icon-btn {
+  background: var(--pr-card);
+  border: 0;
+  color: var(--pr-ink);
+  width: clamp(40px, 6vmin, 56px);
+  height: clamp(40px, 6vmin, 56px);
+  padding: 0;
+  border-radius: 50%;
+  font-size: clamp(18px, 2.6vmin, 24px);
+  box-shadow: 0 1px 4px rgba(15, 42, 46, 0.12);
+}
+
+/* ── 中間：兩個畫面（橫放左右、直放上下） ── */
+.pr-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(6px, 1.2vmin, 14px);
+  min-height: 0;
+}
+
+@media (orientation: portrait) {
+  .pr-panels {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+
+  /* 直放時寬度不夠：進度改看「第 n / N 步」就好 */
+  .pr-dots {
+    display: none;
+  }
+}
+
+.pr-panel {
+  position: relative;
+  min-height: 0;
+  background: #dfe8e9;
+  border-radius: clamp(10px, 2vmin, 22px);
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(15, 42, 46, 0.08);
+}
+
+.pr-user {
+  background: #0d1b1e;
+}
+
+.pr-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* 標準影片只用來把畫面畫進 canvas：放在畫面上（瀏覽器才不會暫停它）但看不到 */
+.pr-ref-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.01;
+  pointer-events: none;
+}
+
+.pr-label {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--pr-ink);
+  font-weight: 700;
+  font-size: clamp(13px, 2.2vmin, 20px);
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+.pr-user .pr-label {
+  background: var(--pr-teal);
+  color: #fff;
+}
+
+.pr-chip-btn {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  font-size: clamp(12px, 1.8vmin, 16px);
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--pr-ink);
+}
+
+/* 圓環進度 */
+.pr-ring {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: clamp(84px, 17vmin, 170px);
+  aspect-ratio: 1;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(15, 42, 46, 0.15);
+}
+
+.pr-ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.pr-ring circle {
+  fill: none;
+  stroke-width: 10;
+}
+
+.pr-ring .track {
+  stroke: var(--pr-teal-soft);
+}
+
+.pr-ring .bar {
+  stroke: var(--pr-teal);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.15s linear;
+}
+
+.pr-ring-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  padding-top: 32%;
+  font-weight: 800;
+  color: var(--pr-ink);
+  font-size: clamp(22px, 5vmin, 48px);
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-ring-text small {
+  font-size: 0.45em;
+  margin-left: 2px;
+  color: var(--pr-sub);
+}
+
+/* 動態動作的檢查點 */
+.pr-checkpoints {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.pr-cp {
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--pr-sub);
+  font-size: clamp(12px, 2vmin, 18px);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.pr-cp.current {
+  background: var(--pr-teal);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ── 下方：提示 ── */
+.pr-feedback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px clamp(12px, 3vmin, 36px);
+  min-height: clamp(52px, 10vmin, 96px);
+  padding: 8px 16px;
+  border-radius: clamp(10px, 2vmin, 22px);
+  background: var(--pr-card);
+  font-size: clamp(18px, 4.2vmin, 40px);
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(15, 42, 46, 0.08);
+}
+
+.pr-feedback.good {
+  color: var(--pr-ok);
+}
+.pr-feedback.bad {
+  color: var(--pr-ink);
+  border: 3px solid var(--pr-bad);
+}
+.pr-feedback.warn {
+  color: var(--pr-warn);
+}
+
+.pr-fix b {
+  color: var(--pr-bad);
+}
+
+.pr-target {
+  font-size: 0.7em;
+  color: var(--pr-sub);
+}
+
+/* 通過提示 */
+.pr-toast {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--pr-ok);
+  color: #fff;
+  font-size: clamp(28px, 7vmin, 72px);
+  font-weight: 800;
+  padding: 0.4em 1em;
+  border-radius: 24px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* 做不到時的出口 */
+.pr-stuck {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 42, 46, 0.45);
+}
+
+.pr-stuck[hidden],
+.pr-toast[hidden],
+.pr-debug[hidden] {
+  display: none;
+}
+
+.pr-stuck-card {
+  background: var(--pr-card);
+  padding: clamp(16px, 4vmin, 40px);
+  border-radius: 24px;
+  max-width: min(560px, 90vw);
+  font-size: clamp(16px, 2.6vmin, 24px);
+}
+
+.pr-stuck-card h2 {
+  margin-top: 0;
+}
+
+.practice button.primary {
+  background: var(--pr-teal);
+  border-color: var(--pr-teal);
+}
+
+.pr-stuck-card button:not(.primary) {
+  background: #eef4f3;
+  color: var(--pr-ink);
+}
+
+/* 除錯面板 */
+.pr-debug {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  width: min(420px, 92vw);
+  max-height: 70vh;
+  overflow: auto;
+  background: rgba(13, 27, 30, 0.92);
+  color: #e6f0ef;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 12px 14px;
+  border-radius: 12px;
+  z-index: 10;
+}
+
+.pr-debug h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.pr-debug table {
+  margin: 6px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-debug th,
+.pr-debug td {
+  padding: 2px 6px;
+  border-bottom: 1px solid #2a3b3e;
+  white-space: nowrap;
+}
+
+.pr-debug tr.in td:last-child {
+  color: #4ade80;
+}
+.pr-debug tr.out td:last-child {
+  color: #f87171;
+}
+.pr-debug tr.unseen {
+  color: #94a3b8;
+}

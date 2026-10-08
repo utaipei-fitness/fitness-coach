@@ -1,0 +1,70 @@
+/* 標準動作建置工具的版面 */
+main.tool {
+  max-width: 1400px;
+}
+
+.tool-status {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--card);
+  margin: 12px 0;
+}
+
+.tool-status.ok {
+  border-left: 4px solid var(--ok);
+}
+
+.tool-status.warn {
+  border-left: 4px solid var(--bad);
+}
+
+.tool-player {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.tool-player video,
+.tool-crop {
+  width: 100%;
+  border-radius: 8px;
+  background: #000;
+}
+
+.tool-time {
+  font-size: 1.6rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 6em;
+}
+
+.tool-angles td {
+  padding: 4px 8px;
+}
+
+.mono {
+  font-family: ui-monospace, Menlo, monospace;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+button.link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--accent);
+  font-size: 1rem;
+}
+
+@media (max-width: 900px) {
+  .tool-player {
+    grid-template-columns: 1fr;
+  }
+}

@@ -11,12 +11,12 @@
     "predev:phone": "node scripts/setup-mediapipe.mjs",
     "dev:phone": "vite --host --mode phone",
     "prebuild": "node scripts/setup-mediapipe.mjs",
-    "build": "tsc --noEmit && vite build",
+    "build": "npm run typecheck && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit",
-    "check": "tsc --noEmit && vitest run"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
+    "check": "npm run typecheck && vitest run"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.1.0",
@@ -24,6 +24,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@types/node": "^26.6.4",
     "@types/qrcode-terminal": "^0.12.2",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "qrcode-terminal": "^0.12.0",

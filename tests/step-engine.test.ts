@@ -1,0 +1,207 @@
+// 步驟判定狀態機的測試：靜態維持、動態檢查點順序、防閃爍、逾時、跳過、放寬
+import { describe, expect, it } from 'vitest';
+import type { ResolvedDynamicStep, ResolvedStaticStep } from '../src/config/load';
+import { Session, StepEngine } from '../src/engine/step-engine';
+import type { StepTargets } from '../src/reference/reference-data';
+
+const elbowDef = { name: '右手肘', side: 'right', type: 'joint', points: ['rightShoulder', 'rightElbow', 'rightWrist'] } as const;
+const opts = { hysteresisDeg: 5, repTimeoutSec: 5 };
+
+const staticStep: ResolvedStaticStep = {
+  id: 'hold',
+  name: '維持',
+  type: 'static',
+  time: 1,
+  holdMs: 1000,
+  clip: [0, 2],
+  timeoutSec: 10,
+  maxAttempts: 3,
+  angles: [{ id: 'rightElbow', def: { ...elbowDef, points: [...elbowDef.points] }, tolerance: 10, hintLow: '再打直' }],
+};
+const staticTargets: StepTargets = { stepId: 'hold', checkpoints: [{ name: '姿勢', time: 1, angles: { rightElbow: 90 } }] };
+
+const dynamicStep: ResolvedDynamicStep = {
+  id: 'bend',
+  name: '彎伸',
+  type: 'dynamic',
+  checkpoints: [
+    { name: '伸直', time: 1 },
+    { name: '彎曲', time: 2 },
+    { name: '伸直', time: 3 },
+  ],
+  reps: 2,
+  clip: [0, 4],
+  timeoutSec: 30,
+  maxAttempts: 3,
+  angles: [{ id: 'rightElbow', def: { ...elbowDef, points: [...elbowDef.points] }, tolerance: 15 }],
+};
+const dynamicTargets: StepTargets = {
+  stepId: 'bend',
+  checkpoints: [
+    { name: '伸直', time: 1, angles: { rightElbow: 170 } },
+    { name: '彎曲', time: 2, angles: { rightElbow: 60 } },
+    { name: '伸直', time: 3, angles: { rightElbow: 170 } },
+  ],
+};
+
+/** 以 30fps 餵一段固定角度，回傳最後的狀態 */
+function feed(engine: StepEngine, from: number, ms: number, angle: number | null) {
+  let view = engine.update(from, { rightElbow: angle });
+  for (let t = from + 33; t <= from + ms; t += 33) view = engine.update(t, { rightElbow: angle });
+  return view;
+}
+
+describe('靜態動作', () => {
+  it('在範圍內連續維持設定的時間就通過', () => {
+    const e = new StepEngine(staticStep, staticTargets, opts, 0);
+    expect(feed(e, 0, 500, 95).heldMs).toBeGreaterThan(400);
+    expect(e.result).toBeNull();
+    feed(e, 533, 600, 95);
+    expect(e.result?.outcome).toBe('passed');
+    expect(e.result?.attempts).toBe(1);
+  });
+
+  it('維持到一半跑掉，要重新計時，並算一次失敗', () => {
+    const e = new StepEngine(staticStep, staticTargets, opts, 0);
+    feed(e, 0, 600, 90);
+    const v = feed(e, 633, 100, 130);
+    expect(v.heldMs).toBe(0);
+    expect(v.allInRange).toBe(false);
+    feed(e, 766, 600, 90);
+    expect(e.result).toBeNull();
+    expect(feed(e, 1400, 500, 90).attempts).toBe(2);
+    expect(e.result?.outcome).toBe('passed');
+  });
+
+  it('防閃爍：已達標時，稍微超出容許角度（在緩衝內）不算離開', () => {
+    const e = new StepEngine(staticStep, staticTargets, opts, 0);
+    feed(e, 0, 300, 95); // 進入範圍（差 5 度）
+    const v = feed(e, 333, 300, 103); // 差 13 度：超過 10 度但在 10+5 以內
+    expect(v.allInRange).toBe(true);
+    expect(v.heldMs).toBeGreaterThan(500);
+  });
+
+  it('防閃爍：還沒進入範圍時，要在容許角度以內才算', () => {
+    const e = new StepEngine(staticStep, staticTargets, opts, 0);
+    expect(feed(e, 0, 100, 103).allInRange).toBe(false);
+  });
+
+  it('看不清楚時暫停計時，不算失敗', () => {
+    const e = new StepEngine(staticStep, staticTargets, opts, 0);
+    feed(e, 0, 500, 90);
+    const v = feed(e, 533, 2000, null);
+    expect(v.visible).toBe(false);
+    expect(v.attempts).toBe(1);
+    expect(v.heldMs).toBeGreaterThan(400);
+    expect(e.result).toBeNull();
+  });
+
+  it('角度差的提示：比標準小用 hintLow', () => {
+    const e = new StepEngine(staticStep, staticTargets, opts, 0);
+    const c = e.update(0, { rightElbow: 60 }).checks[0]!;
+    expect(c.diff).toBe(-30);
+    expect(c.inRange).toBe(false);
+    expect(c.hintLow).toBe('再打直');
+  });
+});
+
+describe('動態動作', () => {
+  it('依序經過所有檢查點算一次，做滿次數通過', () => {
+    const e = new StepEngine(dynamicStep, dynamicTargets, opts, 0);
+    let t = 0;
+    for (let rep = 0; rep < 2; rep++) {
+      for (const angle of [170, 60, 170]) {
+        e.update(t, { rightElbow: angle });
+        t += 100;
+      }
+    }
+    expect(e.result?.outcome).toBe('passed');
+    expect(e.result?.attempts).toBe(2);
+  });
+
+  it('順序不對不算（沒伸直就彎曲）', () => {
+    const e = new StepEngine(dynamicStep, dynamicTargets, opts, 0);
+    const v = e.update(0, { rightElbow: 60 });
+    expect(v.checkpointIndex).toBe(0);
+    expect(v.reps).toBe(0);
+  });
+
+  it('顯示的是「下一個檢查點」的目標', () => {
+    const e = new StepEngine(dynamicStep, dynamicTargets, opts, 0);
+    e.update(0, { rightElbow: 170 });
+    const v = e.update(33, { rightElbow: 120 });
+    expect(v.checkpointIndex).toBe(1);
+    expect(v.checks[0]!.target).toBe(60);
+  });
+
+  it('做到一半太久沒到下一個檢查點，從頭開始並算一次失敗', () => {
+    const e = new StepEngine(dynamicStep, dynamicTargets, opts, 0);
+    e.update(0, { rightElbow: 170 });
+    const v = feed(e, 33, 5100, 120);
+    expect(v.checkpointIndex).toBe(0);
+    feed(e, 5200, 100, 60);
+    expect(e.update(5400, { rightElbow: 60 }).checkpointIndex).toBe(0);
+  });
+});
+
+describe('出口：逾時、跳過、放寬', () => {
+  it('超過逾時秒數，stuck 變成 true', () => {
+    const e = new StepEngine(staticStep, staticTargets, opts, 0);
+    expect(feed(e, 0, 9000, 150).stuck).toBe(false);
+    expect(feed(e, 9033, 1000, 150).stuck).toBe(true);
+  });
+
+  it('失敗次數達上限，stuck 變成 true', () => {
+    const e = new StepEngine(staticStep, staticTargets, opts, 0);
+    let t = 0;
+    for (let i = 0; i < 3; i++) {
+      feed(e, t, 300, 90);
+      feed(e, t + 333, 100, 150);
+      t += 500;
+    }
+    expect(e.update(t, { rightElbow: 150 }).stuck).toBe(true);
+  });
+
+  it('放寬後容許角度變大、重新計時', () => {
+    const e = new StepEngine(staticStep, staticTargets, opts, 0);
+    feed(e, 0, 10000, 105);
+    e.relax(10, 10100);
+    const v = e.update(10133, { rightElbow: 105 });
+    expect(v.stuck).toBe(false);
+    expect(v.relaxed).toBe(true);
+    expect(v.checks[0]!.tolerance).toBe(20);
+    expect(v.allInRange).toBe(true);
+  });
+
+  it('跳過會記錄為 skipped', () => {
+    const e = new StepEngine(staticStep, staticTargets, opts, 0);
+    feed(e, 0, 1000, 150);
+    expect(e.skip(1100).outcome).toBe('skipped');
+  });
+});
+
+describe('整套練習 Session', () => {
+  it('一步通過後自動進下一步，全部結束後 finished', () => {
+    const s = new Session([staticStep, dynamicStep], [staticTargets, dynamicTargets], opts, 0);
+    let t = 0;
+    let event = null;
+    while (!event) {
+      event = s.update(t, { rightElbow: 90 }).event;
+      t += 33;
+    }
+    expect(event.type).toBe('passed');
+    expect(s.stepIndex).toBe(1);
+    expect(s.skip(t)?.type).toBe('skipped');
+    expect(s.finished).toBe(true);
+    expect(s.results.map((r) => r.outcome)).toEqual(['passed', 'skipped']);
+  });
+
+  it('記錄每個角度未達標的幀數（報告用）', () => {
+    const s = new Session([staticStep], [staticTargets], opts, 0);
+    s.update(0, { rightElbow: 150 });
+    s.update(33, { rightElbow: 150 });
+    s.skip(66);
+    // 差 60 度、容許 10 度：每幀超出 50 度
+    expect(s.results[0]!.deviations['rightElbow']).toMatchObject({ frames: 2, outFrames: 2, worstFrames: 2, sumWorstExcess: 100 });
+  });
+});

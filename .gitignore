@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+.DS_Store
+*.local
+.claude/settings.local.json
+
+# 官方示範影片不進 git（版權考量），只保留說明檔
+assets/reference/*
+!assets/reference/README.md

@@ -1,0 +1,25 @@
+{
+  "name": "fitness-coach",
+  "private": true,
+  "version": "0.0.0",
+  "description": "即時健身操動作比對系統",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "check": "tsc --noEmit && vitest run"
+  },
+  "dependencies": {
+    "jsonc-parser": "^3.3.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3"
+  }
+}

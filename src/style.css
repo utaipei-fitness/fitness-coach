@@ -1,0 +1,104 @@
+/* 顏色與字級集中在這裡，方便日後統一調整 */
+:root {
+  --bg: #111418;
+  --fg: #f2f4f7;
+  --muted: #9aa4b2;
+  --ok: #3ddc84;
+  --bad: #ff5a5a;
+  --card: #1c2128;
+  --line: #2d333b;
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+main {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  line-height: 1.6;
+}
+
+h1 {
+  font-size: 1.8rem;
+  margin: 0 0 8px;
+}
+
+h2 {
+  font-size: 1.3rem;
+  margin: 28px 0 8px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.ok {
+  color: var(--ok);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+/* 摘要表格 */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+th {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* 設定檔錯誤清單 */
+.config-errors h1 {
+  color: var(--bad);
+}
+
+.config-errors ol {
+  padding-left: 1.4em;
+}
+
+.error-card {
+  background: var(--card);
+  border-left: 4px solid var(--bad);
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin: 12px 0;
+}
+
+.error-loc {
+  font-weight: 600;
+}
+
+.error-field {
+  color: var(--muted);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.9rem;
+}
+
+.error-msg {
+  margin-top: 4px;
+  font-size: 1.05rem;
+}
+
+/* 序號、名稱、類型欄不換行 */
+td:nth-child(-n + 3),
+th {
+  white-space: nowrap;
+}

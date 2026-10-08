@@ -1,0 +1,67 @@
+// ═══════════════════════════════════════════════
+// 健身操步驟清單：練習時依照這裡的順序，一次進行一步
+//
+// ⚠ 目前三個步驟是「示範用的暫定內容」，時間點都是暫填。
+//    階段 2 用標準動作建置工具看影片、找出正確時間點後再替換。
+//
+// 每一步的欄位：
+//   id          代號（小寫英文、數字、-），每一步不可重複
+//   name        畫面上顯示的中文名稱
+//   type        "static"  = 靜態：姿勢維持一段時間就通過
+//               "dynamic" = 動態：依序經過各檢查點算一次，做滿次數就通過
+//   time        （靜態）標準影片中這個姿勢的時間點，單位：秒
+//   checkpoints （動態）各檢查點的名稱與時間點，至少 2 個，時間要依序變大
+//   angles      要檢查的角度（代號見 angles.json），每個角度可再設定：
+//                 tolerance 容許角度（±度），不寫就用 settings.json 的預設值
+//                 hintLow   你的角度「比標準小」時顯示的提示
+//                 hintHigh  你的角度「比標準大」時顯示的提示
+//               提示文字請以「練習者」的角度來寫（例如「右手再抬高」指練習者自己的右手）
+//
+// 可省略的欄位（不寫就用 settings.json 的預設值）：
+//   holdMs（靜態維持毫秒）、reps（動態次數）、timeoutSec、maxAttempts
+//   enabled: false 可暫時停用這一步（不用刪掉）
+// ═══════════════════════════════════════════════
+{
+  "name": "國軍操（測試版）",
+  "referenceVideo": "army-exercise.mp4", // 放在 assets/reference/ 的標準影片檔名（建議只用英文和數字）
+
+  "steps": [
+    {
+      "id": "arms-side-raise",
+      "name": "兩臂側平舉",
+      "type": "static",
+      "time": 5.0,
+      "angles": {
+        "leftShoulderRaise":  { "hintLow": "左手再抬高", "hintHigh": "左手放低一點" },
+        "rightShoulderRaise": { "hintLow": "右手再抬高", "hintHigh": "右手放低一點" },
+        "leftElbow":  { "tolerance": 25, "hintLow": "左手臂打直" },
+        "rightElbow": { "tolerance": 25, "hintLow": "右手臂打直" }
+      }
+    },
+    {
+      "id": "arms-overhead",
+      "name": "兩臂上舉放下",
+      "type": "dynamic",
+      "checkpoints": [
+        { "name": "手放下", "time": 10.0 },
+        { "name": "手舉過頭", "time": 11.0 },
+        { "name": "手放下", "time": 12.0 }
+      ],
+      "reps": 3,
+      "angles": {
+        "leftShoulderRaise":  { "hintLow": "左手再舉高", "hintHigh": "左手放低" },
+        "rightShoulderRaise": { "hintLow": "右手再舉高", "hintHigh": "右手放低" }
+      }
+    },
+    {
+      "id": "side-bend",
+      "name": "體側彎",
+      "type": "static",
+      "time": 20.0,
+      "holdMs": 2000,
+      "angles": {
+        "trunkTilt": { "tolerance": 15, "hintLow": "身體再往側邊彎一點", "hintHigh": "身體不要彎太多" }
+      }
+    }
+  ]
+}

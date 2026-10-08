@@ -1,0 +1,45 @@
+// ═══════════════════════════════════════════════
+// 角度定義：每個「可以檢查的角度」用哪幾個關鍵點計算
+// routine.json 的每一步只要寫這裡的代號（例如 rightShoulderRaise）
+//
+// ★ 所有左右一律指「練習者自己的」左右。
+//   （鏡像模式下，程式會先把示範者的骨架左右翻轉，再算目標角度，你不用自己換算。）
+//
+// 欄位說明：
+//   name   畫面上顯示的中文名稱
+//   side   "left" / "right" / "center"：這是身體哪一側的角度（用來檢查有沒有複製貼上忘了改）
+//   type   "joint"   = 三點夾角：在第 2 個點量 0～180 度（180 = 打直）
+//          "segment" = 肢段方向：從第 1 點指向第 2 點，相對「直立朝上」的角度
+//                      （0 = 朝正上方，往自己右側傾為正、往左側傾為負，-180～180）
+//   points 關鍵點名稱（joint 填 3 個、segment 填 2 個）
+//          最後一個點是「會動的那一端」，未達標時那段肢段會變紅
+//          可用名稱見 src/pose/landmarks.ts，另有 midShoulder（兩肩中點）、midHip（兩髖中點）
+// ═══════════════════════════════════════════════
+{
+  "angles": {
+    // ── 手臂 ──
+    // 上臂抬舉：軀幹與上臂的夾角。0 = 手垂在身側，90 = 側平舉，180 = 舉過頭
+    "leftShoulderRaise":  { "name": "左上臂抬舉", "side": "left",  "type": "joint", "points": ["leftHip", "leftShoulder", "leftElbow"] },
+    "rightShoulderRaise": { "name": "右上臂抬舉", "side": "right", "type": "joint", "points": ["rightHip", "rightShoulder", "rightElbow"] },
+
+    // 手肘：180 = 手臂打直
+    "leftElbow":  { "name": "左手肘", "side": "left",  "type": "joint", "points": ["leftShoulder", "leftElbow", "leftWrist"] },
+    "rightElbow": { "name": "右手肘", "side": "right", "type": "joint", "points": ["rightShoulder", "rightElbow", "rightWrist"] },
+
+    // ── 下肢 ──
+    // 髖（軀幹與大腿）：180 = 站直，腿往外張開時變小（正面拍攝看不太出往前抬腿）
+    "leftHip":  { "name": "左髖", "side": "left",  "type": "joint", "points": ["leftShoulder", "leftHip", "leftKnee"] },
+    "rightHip": { "name": "右髖", "side": "right", "type": "joint", "points": ["rightShoulder", "rightHip", "rightKnee"] },
+
+    // 膝：180 = 腿打直
+    "leftKnee":  { "name": "左膝", "side": "left",  "type": "joint", "points": ["leftHip", "leftKnee", "leftAnkle"] },
+    "rightKnee": { "name": "右膝", "side": "right", "type": "joint", "points": ["rightHip", "rightKnee", "rightAnkle"] },
+
+    // 兩腿張開角：0 = 併腿
+    "legSpread": { "name": "兩腿張開", "side": "center", "type": "joint", "points": ["leftKnee", "midHip", "rightKnee"] },
+
+    // ── 軀幹 ──
+    // 軀幹側彎：0 = 直立，往自己右側彎為正、左側為負
+    "trunkTilt": { "name": "軀幹側彎", "side": "center", "type": "segment", "points": ["midHip", "midShoulder"] }
+  }
+}

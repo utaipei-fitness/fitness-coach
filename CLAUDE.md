@@ -32,7 +32,7 @@
 | 階段 | 內容 | 狀態 |
 |---|---|---|
 | 0 | 環境檢查、專案骨架、設定檔與格式檢查、測試框架 | ✅ 完成 |
-| 1 | 鏡頭與骨架（電腦＋手機區網 HTTPS），影片檔取代鏡頭 | 未開始 |
+| 1 | 鏡頭與骨架（電腦＋手機區網 HTTPS），影片檔取代鏡頭 | ✅ 完成 |
 | 2 | 標準動作建置工具（`tools/reference.html`） | 未開始 |
 | 3 | 步驟判定引擎、差異比較呈現、除錯面板 | 未開始 |
 | 4 | 練習流程與畫面、錄製與重播 | 未開始 |
@@ -59,6 +59,9 @@ fitness_coach/
 ├── generated/              ★ 程式產生的資料，不要手改（標準骨架、目標角度）
 ├── assets/reference/       官方示範影片（不進 git）
 ├── tools/                  ⏳ 開發用工具頁（階段 2：標準動作建置工具）
+├── scripts/
+│   └── setup-mediapipe.mjs 自動準備 MediaPipe 執行檔與模型（dev/build 前自動執行）
+├── public/                 （自動產生，不進 git）mediapipe/wasm 執行檔、models/ 三種姿態模型
 ├── src/
 │   ├── main.ts             進入點：載入設定 → 有錯顯示錯誤清單，沒錯進主畫面
 │   ├── style.css           顏色與字級
@@ -68,9 +71,14 @@ fitness_coach/
 │   │   ├── load.ts         解析 → 檢查 → 跨檔檢查 → 套用預設值，產生 AppConfig（純函式）
 │   │   └── bundled.ts      把 config/*.json 打包進網頁並呼叫 load.ts
 │   ├── pose/               姿態估計
-│   │   └── landmarks.ts    MediaPipe 33 個關鍵點名稱、中文名、虛擬點（兩肩／兩髖中點）
-│   ├── input/              ⏳ 鏡頭／影片檔／重播 JSON 輸入（階段 1、4）
-│   ├── filter/             ⏳ One Euro 平滑濾波（階段 1）
+│   │   ├── landmarks.ts    MediaPipe 33 個關鍵點名稱、中文名、虛擬點（兩肩／兩髖中點）
+│   │   ├── types.ts        PoseFrame：全專案共用的姿態資料格式
+│   │   ├── estimator.ts    包裝 MediaPipe（GPU 失敗自動改 CPU）；只有這裡直接用 MediaPipe
+│   │   └── pipeline.ts     影像 → 姿態估計 → 平滑 → PoseFrame；同模型只載入一次
+│   ├── input/
+│   │   └── video-source.ts 鏡頭／影片檔輸入、逐幀回呼（⏳ 重播 JSON：階段 4）
+│   ├── filter/
+│   │   └── one-euro.ts     One Euro 平滑濾波（單一數值＋整個姿態）
 │   ├── angles/             ⏳ 角度計算（階段 2）
 │   ├── engine/             ⏳ 步驟判定狀態機（階段 3）——不可依賴畫面程式碼，要能單獨測試
 │   ├── feedback/           ⏳ 差異提示：找出最需要修正的角度、箭頭方向（階段 3）
@@ -79,9 +87,14 @@ fitness_coach/
 │   └── ui/                 畫面
 │       ├── dom.ts          建立畫面元素的小工具（文字一律當純文字放入）
 │       ├── config-error-view.ts    設定檔錯誤清單畫面
-│       └── config-summary-view.ts  設定檔摘要畫面（階段 0 首頁）
+│       ├── config-summary.ts       設定檔摘要（首頁下方）
+│       ├── home-view.ts    首頁：開啟鏡頭／選擇影片檔
+│       ├── live-view.ts    即時骨架畫面（全螢幕、FPS、每幀處理時間）
+│       ├── skeleton.ts     在 canvas 上畫骨架（可個別指定肢段顏色）
+│       └── perf-meter.ts   FPS 與每幀處理時間量測
 └── tests/                  自動化測試（Vitest）
-    └── config.test.ts      設定檔載入與中文錯誤訊息；也會檢查專案裡真正的設定檔
+    ├── config.test.ts      設定檔載入與中文錯誤訊息；也會檢查專案裡真正的設定檔
+    └── one-euro.test.ts    平滑濾波
 ```
 
 模組之間只透過明確的型別溝通（例如 `AppConfig`、`ResolvedStep`），下游程式拿到的是已套用預設值的設定，不用再處理「沒填」的情況。
@@ -98,7 +111,7 @@ config/*.json → 設定檢查（src/config）→ AppConfig ─┐
 標準影片 → 建置工具 → generated/（目標角度）┘
 ```
 
-目前（階段 0）只有第一行：設定檔載入、檢查，並在首頁顯示摘要。
+目前（階段 1）做到：設定檢查 → 鏡頭／影片 → 姿態估計 → 平滑 → 畫骨架。
 
 ---
 
@@ -115,6 +128,8 @@ config/*.json → 設定檢查（src/config）→ AppConfig ─┐
 - **設定檔可以寫 `//` 註解，最後一項多逗號也沒關係。** 格式錯誤會在網頁上用中文指出「哪個檔案、第幾步、哪個欄位、哪裡錯」，不會白屏。
 - **設定檔欄位打錯字會被抓出來**（不允許多餘欄位），並提示「是不是要打 xxx？」。
 - `enabled: false` 可暫時停用某一步，不用刪掉。
+- **PoseFrame 的 x、y 是 0～1 的相對座標**，算角度前要乘回影像寬高（`width`、`height`），否則直式影片的角度會變形。
+- `<video>` 必須先放進畫面再播放（`playVideo()`），否則瀏覽器可能為了省電暫停它。
 
 ---
 
@@ -128,9 +143,19 @@ config/*.json → 設定檢查（src/config）→ AppConfig ─┐
 | `npm test` | 執行自動化測試 |
 | `npm run check` | 型別檢查＋測試（**每次修改後都要跑**） |
 | `npm run build` | 產生正式版網站到 `dist/` |
-| ⏳ 手機測試 | 階段 1 建立（區網 HTTPS） |
+| `npm run dev:phone` | 手機測試：開 HTTPS 伺服器，終端機會印出區網網址與 QR code |
+| `npm run setup` | 重新準備 MediaPipe 檔案（通常不用手動跑，dev/build 會自動執行） |
 | ⏳ 重新產生標準資料 | 階段 2 建立（建置工具） |
 | ⏳ 部署 | 階段 6 建立 |
+
+### 手機測試的步驟與常見問題
+
+1. 手機和 Mac 連**同一個 Wi-Fi**，在 Mac 執行 `npm run dev:phone`。
+2. 用手機相機掃終端機上的 QR code（或手動輸入 `https://192.168.x.x:5173`）。
+3. 出現「連線不是私人連線」警告：iPhone Safari 點「顯示詳細資訊 → 瀏覽此網站」；Android Chrome 點「進階 → 繼續前往」。這是因為開發用憑證是自己簽的，正常現象。
+4. 按「開啟鏡頭」，瀏覽器詢問時按「允許」。
+- 手機連不上：Mac 若跳出「是否允許 node 接受連入連線」請按允許；學校或公司 Wi-Fi 可能禁止裝置互連，可改用手機熱點讓 Mac 連上。
+- 畫面很卡：把 `config/settings.json` 的 `camera.width/height` 改成 640 × 480。
 
 ---
 

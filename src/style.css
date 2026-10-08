@@ -7,6 +7,7 @@
   --bad: #ff5a5a;
   --card: #1c2128;
   --line: #2d333b;
+  --accent: #2f81f7;
   color-scheme: dark;
   font-family: system-ui, -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif;
   background: var(--bg);
@@ -101,4 +102,103 @@ th {
 td:nth-child(-n + 3),
 th {
   white-space: nowrap;
+}
+
+/* ── 按鈕 ── */
+button {
+  font: inherit;
+  font-size: 1.1rem;
+  padding: 12px 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 20px 0 8px;
+}
+
+.error-banner {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+/* ── 即時骨架畫面（全螢幕） ── */
+.live {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  overflow: hidden;
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+}
+
+/* 影像與骨架疊在一起；canvas 的寬高等於影像原始寬高，兩者用同樣方式縮放就能對齊 */
+.stage video,
+.stage canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* 自拍鏡像：影像與骨架一起左右翻轉 */
+.stage.mirrored {
+  transform: scaleX(-1);
+}
+
+.hud {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 8px;
+  padding: 6px 12px;
+  pointer-events: none;
+}
+
+.hud-perf {
+  top: calc(12px + env(safe-area-inset-top));
+  left: calc(12px + env(safe-area-inset-left));
+  font-size: clamp(14px, 2vw, 22px);
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-msg {
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 90%;
+  text-align: center;
+  font-size: clamp(20px, 3.5vw, 40px);
+  font-weight: 600;
+}
+
+.hud-msg.error {
+  color: var(--bad);
+}
+
+.hud-exit {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  right: calc(12px + env(safe-area-inset-right));
+  background: rgba(0, 0, 0, 0.6);
 }

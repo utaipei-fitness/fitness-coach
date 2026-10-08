@@ -55,9 +55,15 @@ export const settingsSchema = strict({
       dCutoff: z.number().positive(),
     }),
   }),
+  camera: strict({
+    facingMode: z.enum(['user', 'environment']),
+    width: z.number().int().min(160).max(3840),
+    height: z.number().int().min(120).max(2160),
+  }),
   display: strict({
     mirrorMode: z.enum(['mirror', 'sameSide']),
     selfieView: z.boolean(),
+    skeletonWidth: z.number().positive().max(20),
   }),
   energy: strict({
     met: z.number().positive().max(25),

@@ -197,6 +197,13 @@ describe('預設值套用', () => {
     expect(c!.maxAttempts).toBe(settings.giveUp.maxAttempts);
   });
 
+  it('整體放寬會加到每個角度上（包括個別設定的）', () => {
+    const files = { ...base, 'settings.json': base['settings.json']!.replace('"extraToleranceDeg": 0', '"extraToleranceDeg": 10') };
+    const r = parseConfigFiles(files);
+    if (!r.ok) throw new Error(messages(r.errors));
+    expect(r.config.routine.steps[0]!.angles.map((x) => x.tolerance)).toEqual([r.config.settings.judge.toleranceDeg + 10, 17]);
+  });
+
   it('enabled: false 的步驟不會出現在練習中', () => {
     expect(load().routine.steps.map((s) => s.id)).toEqual(['a', 'c']);
   });

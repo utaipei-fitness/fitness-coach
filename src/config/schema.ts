@@ -36,6 +36,7 @@ const seconds = z.number().min(0);
 export const settingsSchema = strict({
   judge: strict({
     toleranceDeg: degrees,
+    extraToleranceDeg: z.number().min(0).max(90),
     hysteresisDeg: z.number().min(0).max(90),
     holdMs: z.number().int().min(0),
     reps: z.number().int().min(1),

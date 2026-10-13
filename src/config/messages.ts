@@ -11,6 +11,7 @@ export const FIELD_LABELS: Record<string, string> = {
   // settings.json
   judge: '判定標準',
   toleranceDeg: '預設容許角度',
+  extraToleranceDeg: '整體放寬角度',
   hysteresisDeg: '防閃爍緩衝角度',
   holdMs: '維持毫秒數',
   reps: '次數',

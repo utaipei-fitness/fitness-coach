@@ -212,7 +212,8 @@ config/*.json → 設定檢查（src/config）→ AppConfig ─┐
 
 ### 調整容許範圍
 
-- **全部動作一起調**：改 `config/settings.json` 的 `judge.toleranceDeg`。
+- **全部一起放寬或收緊（最簡單）**：改 `config/settings.json` 的 `judge.extraToleranceDeg`，所有角度（包括個別設定的）都會加上這個度數。
+- **改預設容許角度**：`judge.toleranceDeg`（只影響沒有個別設定 tolerance 的角度）。
 - **只調某一步的某個角度**：在 `config/routine.json` 那一步的 `angles` 裡，給該角度加上 `"tolerance": 數字`。
 - 相關參數：`judge.holdMs`（靜態維持時間）、`judge.hysteresisDeg`（防閃爍緩衝）、`giveUp.*`（逾時與放寬）。
 

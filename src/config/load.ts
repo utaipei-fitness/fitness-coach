@@ -209,7 +209,7 @@ function resolve(settings: Settings, anglesFile: AnglesFile, routine: Routine): 
         angles: Object.entries(s.angles).map(([id, rule]) => ({
           id,
           def: anglesFile.angles[id]!,
-          tolerance: rule.tolerance ?? settings.judge.toleranceDeg,
+          tolerance: (rule.tolerance ?? settings.judge.toleranceDeg) + settings.judge.extraToleranceDeg,
           hintLow: rule.hintLow,
           hintHigh: rule.hintHigh,
         })),

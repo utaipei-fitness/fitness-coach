@@ -154,6 +154,13 @@ describe('routine.json 錯誤', () => {
     expect(messages(errorsOf(files))).toContain('重複了，第 1 步已經用過');
   });
 
+  it('跟做步驟一定要有 clip 和 durationSec', () => {
+    const files = withEdit('routine.json', (d) => d.steps.push({ id: 'walk', name: '踏步', type: 'follow', durationSec: 5 }));
+    const [e] = errorsOf(files);
+    expect(e!.where).toContain('踏步');
+    expect(e!.field).toContain('clip');
+  });
+
   it('沒有列出任何角度', () => {
     const files = withEdit('routine.json', (d) => (d.steps[0].angles = {}));
     expect(messages(errorsOf(files))).toContain('至少要列出一個要檢查的角度');

@@ -45,7 +45,9 @@ export class DebugPanel {
     const stepInfo =
       step.type === 'static'
         ? `靜態・已維持 ${(view.heldMs / 1000).toFixed(1)} / ${(step.holdMs / 1000).toFixed(1)} 秒`
-        : `動態・第 ${view.reps}/${step.reps} 次・等待「${step.checkpoints[view.checkpointIndex]?.name}」`;
+        : step.type === 'follow'
+          ? `跟做・已做 ${(view.heldMs / 1000).toFixed(1)} / ${step.durationSec} 秒（不判定角度）`
+          : `動態・第 ${view.reps}/${step.reps} 次・等待「${step.checkpoints[view.checkpointIndex]?.name}」`;
     this.element.replaceChildren(
       el('h3', {}, '除錯面板'),
       el('div', {}, `步驟 ${stepIndex + 1}：${step.name}（${step.id}）`),

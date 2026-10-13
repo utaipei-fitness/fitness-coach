@@ -16,8 +16,11 @@ export interface HomeState {
   error?: string;
 }
 
+const TYPE_NAMES = { static: '靜態', dynamic: '動態', follow: '跟做' } as const;
+
 function conditionText(step: ResolvedStep): string {
   if (step.type === 'static') return `維持 ${step.holdMs / 1000} 秒`;
+  if (step.type === 'follow') return `跟著做 ${step.durationSec} 秒`;
   return `${step.reps} 次・${step.checkpoints.map((c) => c.name).join(' → ')}`;
 }
 
@@ -82,7 +85,7 @@ export function renderHome(root: HTMLElement, config: AppConfig, state: HomeStat
             el(
               'div',
               {},
-              el('div', { class: 'home-step-name' }, s.name, el('span', { class: `tag ${s.type}` }, s.type === 'static' ? '靜態' : '動態')),
+              el('div', { class: 'home-step-name' }, s.name, el('span', { class: `tag ${s.type}` }, TYPE_NAMES[s.type])),
               el('div', { class: 'muted' }, s.description ?? ''),
               el('div', { class: 'home-step-cond' }, conditionText(s)),
             ),

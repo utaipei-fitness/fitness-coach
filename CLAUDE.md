@@ -144,6 +144,8 @@ config/*.json → 設定檢查（src/config）→ AppConfig ─┐
   - `mirrorMode: "mirror"`（照畫面跟做）：程式會先把示範者的骨架左右鏡射（x 翻轉＋左右標籤對調），再算目標角度。
   - `mirrorMode: "sameSide"`（依口令同側）：直接用示範者的骨架。
   - 畫面上使用者自己的影像以自拍鏡像方式顯示（`selfieView`），只影響顯示，不影響計算。
+- **步驟類型**（`config/routine.json`）：`static` 靜態維持、`dynamic` 依序經過檢查點、`follow` 跟做（正面量不準角度的動作，人在畫面中做滿秒數即可，不判定角度）。
+- 正面拍攝時，往後蹲的後腳踝常被身體擋住（看不清楚 → 判定暫停）。這類動作只檢查看得清楚的關節；新增動作後，`reference-integration.test.ts` 會抓出這種問題。
 - **角度類型**（`config/angles.json`）：
   - `joint`：三點夾角，在第 2 點量 0–180°（180 = 打直）
   - `segment`：第 1 點指向第 2 點的方向，相對「直立朝上」的角度，往練習者自己右側傾為正（-180～180）

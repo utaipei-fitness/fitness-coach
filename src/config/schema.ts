@@ -159,7 +159,18 @@ const dynamicStepSchema = strict({
   reps: z.number().int().min(1).optional(),
 });
 
-export const stepSchema = z.discriminatedUnion('type', [staticStepSchema, dynamicStepSchema]);
+/** 跟做：從正面量不準角度的動作（例如原地踏步、出拳），人在畫面中跟著做滿秒數就完成，不判定角度 */
+const followStepSchema = strict({
+  id: stepId,
+  name: z.string().min(1),
+  description: z.string().optional(),
+  enabled: z.boolean().optional(),
+  type: z.literal('follow'),
+  clip: timeRange,
+  durationSec: z.number().positive().max(600),
+});
+
+export const stepSchema = z.discriminatedUnion('type', [staticStepSchema, dynamicStepSchema, followStepSchema]);
 
 const ratio = z.number().min(0).max(1);
 

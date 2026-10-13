@@ -60,6 +60,7 @@ export const FIELD_LABELS: Record<string, string> = {
   enabled: '是否啟用',
   time: '影片秒數',
   checkpoints: '檢查點',
+  durationSec: '跟做秒數',
   tolerance: '容許角度',
   hintLow: '角度不足時的提示',
   hintHigh: '角度超過時的提示',

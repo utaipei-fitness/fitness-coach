@@ -1,6 +1,6 @@
 // 步驟判定狀態機的測試：靜態維持、動態檢查點順序、防閃爍、逾時、跳過、放寬
 import { describe, expect, it } from 'vitest';
-import type { ResolvedDynamicStep, ResolvedStaticStep } from '../src/config/load';
+import type { ResolvedDynamicStep, ResolvedFollowStep, ResolvedStaticStep } from '../src/config/load';
 import { Session, StepEngine } from '../src/engine/step-engine';
 import type { StepTargets } from '../src/reference/reference-data';
 
@@ -266,5 +266,42 @@ describe('降低敏感度（寬限）', () => {
     e.update(100, { rightElbow: 60, leftElbow: 120 });
     const v = e.update(900, { rightElbow: 120, leftElbow: 60 });
     expect(v.checkpointIndex).toBe(1);
+  });
+});
+
+describe('跟做（follow）', () => {
+  const follow: ResolvedFollowStep = {
+    id: 'march',
+    name: '原地踏步',
+    type: 'follow',
+    clip: [0, 3],
+    durationSec: 2,
+    angles: [],
+    timeoutSec: 60,
+    maxAttempts: 5,
+  };
+  const targets: StepTargets = { stepId: 'march', checkpoints: [{ name: '跟著做', time: 0, angles: {} }] };
+
+  it('人在畫面中跟著做滿秒數就完成', () => {
+    const e = new StepEngine(follow, targets, opts, 0);
+    let t = 0;
+    while (!e.result && t < 5000) {
+      e.update(t, {}, true);
+      t += 33;
+    }
+    expect(e.result?.outcome).toBe('passed');
+    expect(t).toBeGreaterThan(1900);
+    expect(t).toBeLessThan(2200);
+  });
+
+  it('看不到人時暫停計時', () => {
+    const e = new StepEngine(follow, targets, opts, 0);
+    for (let t = 0; t < 5000; t += 33) e.update(t, {}, false);
+    expect(e.result).toBeNull();
+  });
+
+  it('跟做不會出現「跳過／放寬」', () => {
+    const e = new StepEngine(follow, targets, opts, 0);
+    expect(e.update(120000, {}, false).stuck).toBe(false);
   });
 });

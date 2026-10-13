@@ -94,7 +94,8 @@ export function computeTargets(ref: ReferenceData, steps: ResolvedStep[], minVis
   const errors: string[] = [];
   const fps = ref.file.fps;
   const targets = steps.map((step): StepTargets => {
-    const points = step.type === 'static' ? [{ name: '姿勢', time: step.time }] : step.checkpoints;
+    const points =
+      step.type === 'static' ? [{ name: '姿勢', time: step.time }] : step.type === 'dynamic' ? step.checkpoints : [{ name: '跟著做', time: step.clip[0] }];
     return {
       stepId: step.id,
       checkpoints: points.map((cp) => {

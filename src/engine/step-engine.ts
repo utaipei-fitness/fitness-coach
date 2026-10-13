@@ -128,23 +128,28 @@ export class StepEngine {
     return this.finished;
   }
 
-  update(t: number, readings: AngleReadings): StepView {
+  /**
+   * @param present 畫面中有沒有偵測到人（「跟做」類型只看這個）
+   */
+  update(t: number, readings: AngleReadings, present = true): StepView {
     if (this.finished) return this.lastView!;
     const dt = Math.min(Math.max(t - this.lastT, 0), MAX_FRAME_GAP_MS);
     this.lastT = t;
 
     const checks = this.check(readings);
-    const visible = checks.every((c) => c.value !== null);
+    const visible = present && checks.every((c) => c.value !== null);
     const allInRange = visible && checks.every((c) => c.inRange);
     if (visible) this.recordDeviations(checks);
 
     if (visible) {
       if (this.step.type === 'static') this.updateStatic(allInRange, dt, t);
-      else this.updateDynamic(checks, t);
+      else if (this.step.type === 'dynamic') this.updateDynamic(checks, t);
+      else this.updateFollow(dt, t);
     }
 
     const stuck =
       !this.finished &&
+      this.step.type !== 'follow' &&
       (t - this.stuckSince >= this.step.timeoutSec * 1000 || this.failed >= this.step.maxAttempts);
     this.lastView = {
       step: this.step,
@@ -211,6 +216,14 @@ export class StepEngine {
         this.outSince = null;
       }
     }
+  }
+
+  /** 跟做：人在畫面中就累積時間，滿秒數完成 */
+  private updateFollow(dt: number, t: number): void {
+    if (this.step.type !== 'follow') return;
+    if (this.attempts === 0) this.attempts = 1;
+    this.heldMs += dt;
+    if (this.heldMs >= this.step.durationSec * 1000) this.finish('passed', t);
   }
 
   private updateDynamic(checks: AngleCheck[], t: number): void {
@@ -306,8 +319,8 @@ export class Session {
   }
 
   /** 每一幀呼叫。回傳目前狀態，以及這一幀是否剛好通過一步 */
-  update(t: number, readings: AngleReadings): { view: StepView; event: SessionEvent } {
-    const view = this.engine.update(t, readings);
+  update(t: number, readings: AngleReadings, present = true): { view: StepView; event: SessionEvent } {
+    const view = this.engine.update(t, readings, present);
     const result = this.engine.result;
     if (result && !this.finished) return { view, event: this.advance(result, t) };
     return { view, event: null };

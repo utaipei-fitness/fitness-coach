@@ -9,6 +9,7 @@ const MIRROR_TEXT = {
 
 function conditionText(step: ResolvedStep): string {
   if (step.type === 'static') return `維持 ${step.holdMs / 1000} 秒（影片 ${step.time} 秒處）`;
+  if (step.type === 'follow') return `跟著做 ${step.durationSec} 秒（不判定角度）`;
   const cps = step.checkpoints.map((c) => `${c.name}（${c.time} 秒）`).join(' → ');
   return `做 ${step.reps} 次：${cps}`;
 }
@@ -19,7 +20,7 @@ export function configSummary(config: AppConfig): HTMLElement {
     'section',
     { class: 'summary' },
     el('p', { class: 'ok' }, '✅ 設定檔載入成功'),
-    el('h2', {}, `${routine.name}（共 ${routine.steps.length} 步）`),
+    el('h2', {}, `${routine.name.replace(/\n/g, ' ')}（共 ${routine.steps.length} 步）`),
     el(
       'table',
       {},
@@ -37,7 +38,7 @@ export function configSummary(config: AppConfig): HTMLElement {
             {},
             el('td', {}, String(i + 1)),
             el('td', {}, s.name),
-            el('td', {}, s.type === 'static' ? '靜態' : '動態'),
+            el('td', {}, s.type === 'static' ? '靜態' : s.type === 'dynamic' ? '動態' : '跟做'),
             el('td', {}, conditionText(s)),
             el('td', {}, s.angles.map((a) => `${a.def.name} ±${a.tolerance}°`).join('、')),
           ),

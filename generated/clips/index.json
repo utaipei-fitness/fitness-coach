@@ -6,6 +6,21 @@
       "start": 231.5,
       "end": 234
     },
+    "march": {
+      "file": "march.mp4",
+      "start": 35,
+      "end": 42.5
+    },
+    "heel-kick": {
+      "file": "heel-kick.mp4",
+      "start": 45.8,
+      "end": 48.2
+    },
+    "push-front": {
+      "file": "push-front.mp4",
+      "start": 50.8,
+      "end": 53.6
+    },
     "push-sides": {
       "file": "push-sides.mp4",
       "start": 53,
@@ -16,20 +31,60 @@
       "start": 58.6,
       "end": 61.4
     },
+    "punch": {
+      "file": "punch.mp4",
+      "start": 64,
+      "end": 67.4
+    },
+    "knee-down": {
+      "file": "knee-down.mp4",
+      "start": 67.4,
+      "end": 69.4
+    },
+    "punch-turn": {
+      "file": "punch-turn.mp4",
+      "start": 81,
+      "end": 85
+    },
     "squat": {
       "file": "squat.mp4",
       "start": 101,
       "end": 105.8
     },
-    "side-lunge": {
-      "file": "side-lunge.mp4",
-      "start": 175.5,
-      "end": 179
+    "back-lunge-left": {
+      "file": "back-lunge-left.mp4",
+      "start": 136.2,
+      "end": 140.4
+    },
+    "back-lunge-right": {
+      "file": "back-lunge-right.mp4",
+      "start": 148,
+      "end": 151.8
+    },
+    "side-back-left": {
+      "file": "side-back-left.mp4",
+      "start": 168,
+      "end": 175.2
+    },
+    "side-back-right": {
+      "file": "side-back-right.mp4",
+      "start": 175.4,
+      "end": 183.2
     },
     "jumping-jack": {
       "file": "jumping-jack.mp4",
       "start": 203,
-      "end": 206
+      "end": 205
+    },
+    "scissor-jump": {
+      "file": "scissor-jump.mp4",
+      "start": 205,
+      "end": 208.6
+    },
+    "march-end": {
+      "file": "march-end.mp4",
+      "start": 224,
+      "end": 228.6
     }
   }
 }

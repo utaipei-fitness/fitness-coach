@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════
 // 健身操步驟清單：練習時依照這裡的順序，一次進行一步
 //
-// 標準影片：「久坐運動」示範影片（右半邊的站姿示範者）
+// 標準影片：「久坐運動」示範影片（右半邊的站姿示範者），依影片順序列出全部動作
 //
 // 每一步的欄位：
 //   id          代號（小寫英文、數字、-），每一步不可重複
@@ -9,7 +9,10 @@
 //   description （可省略）動作說明，顯示在步驟名稱下方
 //   type        "static"  = 靜態：姿勢維持一段時間就通過
 //               "dynamic" = 動態：依序經過各檢查點算一次，做滿次數就通過
+//               "follow"  = 跟做：從正面量不準角度的動作，人在畫面中跟著做滿 durationSec 秒就完成
+//                           （不判定角度，不需要 angles；clip 必填）
 //   time        （靜態）標準影片中這個姿勢的時間點，單位：秒
+//   durationSec （跟做）要跟著做幾秒
 //   checkpoints （動態）各檢查點的名稱與時間點，至少 2 個，時間要依序變大
 //   clip        （可省略）標準畫面循環播放的片段 [開始秒數, 結束秒數]
 //               不寫就自動用「時間點前後各 1 秒」
@@ -27,7 +30,7 @@
 // 改完存檔，目標角度會自動重新計算，不需要其他步驟。
 // ═══════════════════════════════════════════════
 {
-  "name": "久坐運動零食",
+  "name": "健身動一動\n全齡活力GO!", // \n = 首頁標題換行
 
   "reference": {
     "video": "jiuzuo-exercise.mp4", // 放在 assets/reference/ 的標準影片檔名
@@ -49,6 +52,40 @@
         "leftKnee":  { "hintLow": "左腿站直" },
         "rightKnee": { "hintLow": "右腿站直" }
       }
+    },
+
+    // ── 原地踏步 ──
+    {
+      "id": "march",
+      "name": "原地踏步",
+      "description": "原地踏步，手臂自然前後擺動",
+      "type": "follow",
+      "clip": [35.0, 42.5],
+      "durationSec": 8
+    },
+    {
+      "id": "heel-kick",
+      "name": "後勾腳",
+      "description": "雙手扠腰，左右腳輪流把腳跟往後勾向屁股",
+      "type": "dynamic",
+      "clip": [45.8, 48.2],
+      "checkpoints": [
+        { "name": "勾左腳", "time": 46.3 },
+        { "name": "勾右腳", "time": 47.3 }
+      ],
+      "reps": 4,
+      "angles": {
+        "leftKnee":  { "tolerance": 40, "hintHigh": "左腳跟再往後勾", "hintLow": "左腳放下" },
+        "rightKnee": { "tolerance": 40, "hintHigh": "右腳跟再往後勾", "hintLow": "右腳放下" }
+      }
+    },
+    {
+      "id": "push-front",
+      "name": "手前推",
+      "description": "邊踏步，雙手從胸前往前推出再收回",
+      "type": "follow",
+      "clip": [50.8, 53.6],
+      "durationSec": 6
     },
     {
       "id": "push-sides",
@@ -82,6 +119,44 @@
         "rightShoulderRaise": { "tolerance": 25, "hintLow": "右手再往上推", "hintHigh": "右手收低一點" }
       }
     },
+
+    // ── 拳擊有氧 ──
+    {
+      "id": "punch",
+      "name": "右左右左出拳",
+      "description": "腳步跟著移動，右、左、右、左交替出拳",
+      "type": "follow",
+      "clip": [64.0, 67.4],
+      "durationSec": 6
+    },
+    {
+      "id": "knee-down",
+      "name": "下壓抬膝",
+      "description": "雙手往下壓，同時抬起一側膝蓋，左右交替",
+      "type": "dynamic",
+      "clip": [67.4, 69.4],
+      "checkpoints": [
+        { "name": "抬一膝", "time": 67.8 },
+        { "name": "放下", "time": 68.2 },
+        { "name": "抬另一膝", "time": 68.5 },
+        { "name": "放下", "time": 69.2 }
+      ],
+      "reps": 2,
+      "angles": {
+        "leftHip":  { "tolerance": 30, "hintHigh": "左膝再抬高", "hintLow": "左腳放下" },
+        "rightHip": { "tolerance": 30, "hintHigh": "右膝再抬高", "hintLow": "右腳放下" }
+      }
+    },
+    {
+      "id": "punch-turn",
+      "name": "出拳＋轉身",
+      "description": "出拳並帶動身體旋轉",
+      "type": "follow",
+      "clip": [81.0, 85.0],
+      "durationSec": 6
+    },
+
+    // ── 肌力訓練 ──
     {
       "id": "squat",
       "name": "深蹲",
@@ -98,24 +173,83 @@
       }
     },
     {
-      "id": "side-lunge",
-      "name": "向右側蹲",
-      "description": "右腳往旁邊跨出、右膝彎曲，左腿打直，停住",
-      "type": "static",
-      "time": 177.4,
-      "clip": [175.5, 179.0],
+      "id": "back-lunge-left",
+      "name": "後腳向下蹲（左）",
+      "description": "一腳往後退一步，膝蓋往下蹲，再站回來",
+      "type": "dynamic",
+      "clip": [136.2, 140.4],
+      "checkpoints": [
+        { "name": "站直", "time": 136.6 },
+        { "name": "往下蹲", "time": 138.6 },
+        { "name": "站起", "time": 140.0 }
+      ],
+      // 後腳往後蹲時腳踝會被身體擋住，所以只看「前腳膝蓋」和「兩腿張開」
       "angles": {
-        "rightKnee": { "tolerance": 25, "hintLow": "右膝不用彎那麼多", "hintHigh": "右膝再彎一點" },
-        "leftKnee":  { "tolerance": 20, "hintLow": "左腿打直" },
-        "legSpread": { "tolerance": 20, "hintLow": "右腳再跨開一點", "hintHigh": "雙腳收近一點" }
+        "rightKnee": { "tolerance": 30, "hintHigh": "前腳膝蓋再彎一點", "hintLow": "蹲淺一點" },
+        "legSpread": { "tolerance": 25, "hintLow": "腳再往後跨大一點", "hintHigh": "雙腳收回來" }
       }
     },
+    {
+      "id": "back-lunge-right",
+      "name": "後腳向下蹲（右）",
+      "description": "換另一腳往後退一步，膝蓋往下蹲，再站回來",
+      "type": "dynamic",
+      "clip": [148.0, 151.8],
+      "checkpoints": [
+        { "name": "站直", "time": 148.4 },
+        { "name": "往下蹲", "time": 150.0 },
+        { "name": "站起", "time": 151.4 }
+      ],
+      // 這一側從正面看，前腳膝蓋角度幾乎不變，只看「兩腿張開」
+      "angles": {
+        "legSpread": { "tolerance": 25, "hintLow": "腳再往後跨大一點", "hintHigh": "雙腳收回來" }
+      }
+    },
+    {
+      "id": "side-back-left",
+      "name": "側蹲＋後跨步（左）",
+      "description": "向左側蹲 → 站回 → 向後踩 → 站回",
+      "type": "dynamic",
+      "clip": [168.0, 175.2],
+      "checkpoints": [
+        { "name": "向左側蹲", "time": 169.4 },
+        { "name": "站回", "time": 171.2 },
+        { "name": "向後踩", "time": 172.8 },
+        { "name": "站回", "time": 175.0 }
+      ],
+      "reps": 2,
+      // 向後踩時後腳踝會被擋住，所以不看會往後的那隻腳
+      "angles": {
+        "rightKnee": { "tolerance": 30, "hintHigh": "右膝再彎一點", "hintLow": "右腳打直" },
+        "legSpread": { "tolerance": 20, "hintLow": "腳再跨開一點", "hintHigh": "雙腳收近一點" }
+      }
+    },
+    {
+      "id": "side-back-right",
+      "name": "側蹲＋後跨步（右）",
+      "description": "向右側蹲 → 站回 → 向後踩 → 站回",
+      "type": "dynamic",
+      "clip": [175.4, 183.2],
+      "checkpoints": [
+        { "name": "向右側蹲", "time": 177.4 },
+        { "name": "站回", "time": 179.8 },
+        { "name": "向後踩", "time": 181.4 },
+        { "name": "站回", "time": 183.0 }
+      ],
+      "reps": 2,
+      // 向後踩時後腳踝會被擋住，所以只看「兩腿張開」
+      "angles": {
+        "legSpread": { "tolerance": 20, "hintLow": "腳再跨開一點", "hintHigh": "雙腳收近一點" }
+      }
+    },
+
+    // ── 開合跳／剪刀腳 ──
     {
       "id": "jumping-jack",
       "name": "開合跳",
       "description": "雙腳跳開、雙手往上張開，再併攏",
       "type": "dynamic",
-      "clip": [203.0, 206.0],
+      "clip": [203.0, 205.0],
       "checkpoints": [
         { "name": "併腿", "time": 204.0 },
         { "name": "開腿", "time": 204.4 },
@@ -126,6 +260,32 @@
         "leftShoulderRaise":  { "tolerance": 30, "hintLow": "左手再往上張開", "hintHigh": "左手放低一點" },
         "rightShoulderRaise": { "tolerance": 30, "hintLow": "右手再往上張開", "hintHigh": "右手放低一點" }
       }
+    },
+    {
+      "id": "scissor-jump",
+      "name": "前後交叉跳",
+      "description": "雙腳前後交叉跳，雙手往兩側張開再放下",
+      "type": "dynamic",
+      "clip": [205.0, 208.6],
+      "checkpoints": [
+        { "name": "手放下", "time": 205.8 },
+        { "name": "手張開", "time": 206.2 },
+        { "name": "手放下", "time": 206.5 }
+      ],
+      "angles": {
+        "leftShoulderRaise":  { "tolerance": 30, "hintLow": "左手再張開", "hintHigh": "左手放低一點" },
+        "rightShoulderRaise": { "tolerance": 30, "hintLow": "右手再張開", "hintHigh": "右手放低一點" }
+      }
+    },
+
+    // ── 緩和 ──
+    {
+      "id": "march-end",
+      "name": "踏步結束",
+      "description": "原地踏步，慢慢緩和下來",
+      "type": "follow",
+      "clip": [224.0, 228.6],
+      "durationSec": 6
     }
   ]
 }

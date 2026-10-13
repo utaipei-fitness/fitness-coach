@@ -235,6 +235,9 @@ button.big {
 .home-hero h1 {
   font-size: clamp(2rem, 6vw, 3.2rem);
   margin: 0;
+  /* routine.json 的名稱可以用 \n 換行 */
+  white-space: pre-line;
+  line-height: 1.2;
 }
 
 .home-kicker {
@@ -329,6 +332,11 @@ button.big {
   vertical-align: middle;
   background: var(--accent-soft);
   color: var(--accent);
+}
+
+.tag.follow {
+  background: #e0e7ff;
+  color: #4338ca;
 }
 
 .tag.dynamic {

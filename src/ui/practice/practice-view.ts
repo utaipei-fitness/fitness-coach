@@ -184,6 +184,7 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     stuckBox.hidden = true;
     if (ev) showToast(`已跳過「${ev.result.name}」`);
     if (session.finished) finish();
+    else enterStep(session.stepIndex);
   });
 
   const showToast = (text: string) => {
@@ -244,7 +245,7 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     const step = steps[stepIndex]!;
     const readings: Record<string, number | null> = {};
     for (const a of step.angles) readings[a.id] = frame ? angleValue(a.def, frame, minVis) : null;
-    const { view, event } = session.update(t0, readings);
+    const { view, event } = session.update(t0, readings, frame !== null);
 
     if (event) {
       showToast(event.type === 'passed' ? `✓ ${event.result.name} 完成！` : `已跳過「${event.result.name}」`);
@@ -322,6 +323,9 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     if (step.type === 'static') {
       const remain = Math.max(0, (step.holdMs - view.heldMs) / 1000);
       ring.set(view.heldMs / step.holdMs, view.allInRange ? remain.toFixed(1) : `${(step.holdMs / 1000).toFixed(1)}`, '秒');
+    } else if (step.type === 'follow') {
+      const total = step.durationSec * 1000;
+      ring.set(view.heldMs / total, Math.ceil(Math.max(0, total - view.heldMs) / 1000).toString(), '秒');
     } else {
       ring.set(view.reps / step.reps, `${view.reps}/${step.reps}`, '次');
       [...checkpointChips.children].forEach((c, i) => c.classList.toggle('current', i === view.checkpointIndex));
@@ -348,6 +352,9 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
           c.hint ? ` ${c.hint}` : '',
         );
       });
+    } else if (step.type === 'follow') {
+      cls += ' good';
+      content = ['跟著示範一起做 💪'];
     } else if (step.type === 'static') {
       cls += ' good';
       content = ['很好！保持住 💪'];

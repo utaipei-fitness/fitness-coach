@@ -60,7 +60,13 @@ export interface ResolvedDynamicStep extends ResolvedStepCommon {
   reps: number;
 }
 
-export type ResolvedStep = ResolvedStaticStep | ResolvedDynamicStep;
+export interface ResolvedFollowStep extends ResolvedStepCommon {
+  type: 'follow';
+  /** 跟著做滿幾秒就完成 */
+  durationSec: number;
+}
+
+export type ResolvedStep = ResolvedStaticStep | ResolvedDynamicStep | ResolvedFollowStep;
 
 export interface AppConfig {
   settings: Settings;
@@ -178,6 +184,7 @@ function checkRoutineAngles(routine: Routine, anglesFile: AnglesFile): ConfigErr
   const errors: ConfigError[] = [];
   const known = Object.keys(anglesFile.angles);
   routine.steps.forEach((step, i) => {
+    if (step.type === 'follow') return;
     for (const id of Object.keys(step.angles)) {
       if (!(id in anglesFile.angles)) {
         errors.push({
@@ -200,6 +207,19 @@ function resolve(settings: Settings, anglesFile: AnglesFile, routine: Routine): 
   const steps: ResolvedStep[] = routine.steps
     .filter((s) => s.enabled !== false)
     .map((s) => {
+      if (s.type === 'follow') {
+        return {
+          type: 'follow',
+          id: s.id,
+          name: s.name,
+          description: s.description,
+          clip: s.clip,
+          angles: [],
+          durationSec: s.durationSec,
+          timeoutSec: settings.giveUp.timeoutSec,
+          maxAttempts: settings.giveUp.maxAttempts,
+        };
+      }
       const times = s.type === 'static' ? [s.time] : s.checkpoints.map((c) => c.time);
       const common: ResolvedStepCommon = {
         id: s.id,

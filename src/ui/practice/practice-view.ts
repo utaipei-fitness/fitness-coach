@@ -2,7 +2,7 @@
 // 這裡只負責「接線＋顯示」：判定在 engine/、差異計算在 feedback/、角度在 angles/。
 import { angleValue } from '../../angles/compute';
 import type { AppConfig } from '../../config/load';
-import { Session, type StepView } from '../../engine/step-engine';
+import { engineOptions, Session, type StepView } from '../../engine/step-engine';
 import { alignToReference, arrowSymbol, correctionArrow, topCorrections, type Arrow } from '../../feedback/feedback';
 import { onVideoFrame, playVideo, type VideoSource } from '../../input/video-source';
 import { getEstimator, PosePipeline } from '../../pose/pipeline';
@@ -381,7 +381,7 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     .then((estimator) => {
       if (closed) return;
       const pipeline = new PosePipeline(estimator, settings.pose);
-      session = new Session(steps, targets, { hysteresisDeg: settings.judge.hysteresisDeg, repTimeoutSec: settings.judge.repTimeoutSec }, performance.now());
+      session = new Session(steps, targets, engineOptions(settings.judge), performance.now());
       enterStep(0);
       // 開發測試用：瀏覽器分頁看不到時影片不會播放，可從主控台呼叫 __practiceTick() 手動推進一幀
       if (import.meta.env.DEV) (window as unknown as { __practiceTick?: () => void }).__practiceTick = () => onFrame(pipeline);

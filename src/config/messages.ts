@@ -13,6 +13,8 @@ export const FIELD_LABELS: Record<string, string> = {
   toleranceDeg: '預設容許角度',
   extraToleranceDeg: '整體放寬角度',
   hysteresisDeg: '防閃爍緩衝角度',
+  holdGraceMs: '靜態寬限毫秒數',
+  checkpointWindowMs: '動態檢查點寬限毫秒數',
   holdMs: '維持毫秒數',
   reps: '次數',
   repTimeoutSec: '動態單次逾時秒數',

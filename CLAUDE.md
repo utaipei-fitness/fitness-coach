@@ -216,6 +216,7 @@ config/*.json → 設定檢查（src/config）→ AppConfig ─┐
 - **改預設容許角度**：`judge.toleranceDeg`（只影響沒有個別設定 tolerance 的角度）。
 - **只調某一步的某個角度**：在 `config/routine.json` 那一步的 `angles` 裡，給該角度加上 `"tolerance": 數字`。
 - 相關參數：`judge.holdMs`（靜態維持時間）、`judge.hysteresisDeg`（防閃爍緩衝）、`giveUp.*`（逾時與放寬）。
+- **覺得太容易誤判失敗、但不想降低標準**：調「敏感度」而不是容許角度：`judge.holdGraceMs`（靜態寬限）、`judge.checkpointWindowMs`（動態檢查點寬限）、`judge.hysteresisDeg`（防閃爍）。
 
 ### 更換標準影片
 

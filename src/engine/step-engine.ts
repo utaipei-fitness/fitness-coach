@@ -3,6 +3,7 @@
 // 這個檔案不碰畫面、不碰 MediaPipe，所以可以用測試完整驗證。
 import { angleDiff } from '../angles/compute';
 import type { ResolvedStep } from '../config/load';
+import type { Settings } from '../config/schema';
 import type { StepTargets } from '../reference/reference-data';
 
 /** 每一幀的輸入：角度代號 → 角度（看不清楚為 null） */
@@ -11,6 +12,20 @@ export type AngleReadings = Record<string, number | null>;
 export interface EngineOptions {
   hysteresisDeg: number;
   repTimeoutSec: number;
+  /** 靜態：超出範圍不到這麼久（毫秒）不算中斷，維持計時保留 */
+  holdGraceMs: number;
+  /** 動態：每個角度在這段時間（毫秒）內各自到位過，就算通過這個檢查點（不必同一幀同時到位） */
+  checkpointWindowMs: number;
+}
+
+/** 從 settings.json 的 judge 取出引擎需要的參數 */
+export function engineOptions(judge: Settings['judge']): EngineOptions {
+  return {
+    hysteresisDeg: judge.hysteresisDeg,
+    repTimeoutSec: judge.repTimeoutSec,
+    holdGraceMs: judge.holdGraceMs,
+    checkpointWindowMs: judge.checkpointWindowMs,
+  };
 }
 
 export interface AngleCheck {
@@ -90,7 +105,11 @@ export class StepEngine {
   private failed = 0;
   private stuckSince: number;
   private relaxed = false;
-  private wasAllIn = false;
+  /** 靜態：是否正在維持中，以及從什麼時候開始超出範圍 */
+  private holding = false;
+  private outSince: number | null = null;
+  /** 動態：每個角度最近一次對「目前檢查點」到位的時間 */
+  private lastInAt = new Map<string, number>();
   private deviations: Record<string, AngleDeviation> = {};
   private finished: StepResult | null = null;
   private lastView: StepView | null = null;
@@ -121,7 +140,7 @@ export class StepEngine {
 
     if (visible) {
       if (this.step.type === 'static') this.updateStatic(allInRange, dt, t);
-      else this.updateDynamic(allInRange, t);
+      else this.updateDynamic(checks, t);
     }
 
     const stuck =
@@ -176,21 +195,31 @@ export class StepEngine {
 
   private updateStatic(allIn: boolean, dt: number, t: number): void {
     if (allIn) {
-      if (!this.wasAllIn) this.attempts++;
+      if (!this.holding) this.attempts++;
+      this.holding = true;
+      this.outSince = null;
       this.heldMs += dt;
       if (this.step.type === 'static' && this.heldMs >= this.step.holdMs) this.finish('passed', t);
-    } else if (this.wasAllIn) {
-      // 維持到一半跑掉：算一次失敗的嘗試
-      this.failed++;
-      this.heldMs = 0;
+    } else if (this.holding) {
+      // 短暫跑出範圍（例如骨架抖一下）：寬限時間內暫停計時、不歸零
+      this.outSince ??= t;
+      if (t - this.outSince > this.opts.holdGraceMs) {
+        // 真的跑掉了：算一次失敗的嘗試，重新計時
+        this.failed++;
+        this.heldMs = 0;
+        this.holding = false;
+        this.outSince = null;
+      }
     }
-    this.wasAllIn = allIn;
   }
 
-  private updateDynamic(allIn: boolean, t: number): void {
+  private updateDynamic(checks: AngleCheck[], t: number): void {
     if (this.step.type !== 'dynamic') return;
     const last = this.step.checkpoints.length - 1;
-    if (allIn) {
+    for (const c of checks) if (c.inRange) this.lastInAt.set(c.id, t);
+    // 每個角度都在最近一小段時間內到位過，就算到達這個檢查點
+    const reached = checks.every((c) => t - (this.lastInAt.get(c.id) ?? -Infinity) <= this.opts.checkpointWindowMs);
+    if (reached) {
       if (this.checkpointIndex === 0) this.attempts++;
       if (this.checkpointIndex === last) {
         this.reps++;
@@ -201,12 +230,14 @@ export class StepEngine {
       }
       this.checkpointSince = t;
       this.inRange.clear(); // 換下一個目標，遲滯狀態重來
+      this.lastInAt.clear();
     } else if (this.checkpointIndex > 0 && t - this.checkpointSince > this.opts.repTimeoutSec * 1000) {
       // 做到一半太久沒到下一個檢查點：這次不算，從頭開始
       this.failed++;
       this.checkpointIndex = 0;
       this.checkpointSince = t;
       this.inRange.clear();
+      this.lastInAt.clear();
     }
   }
 

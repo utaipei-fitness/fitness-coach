@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { angleValue } from '../src/angles/compute';
 import { loadBundledConfig } from '../src/config/bundled';
-import { Session } from '../src/engine/step-engine';
+import { engineOptions, Session } from '../src/engine/step-engine';
 import { computeTargets, decodeReference, staleClipSteps, type ReferenceFile } from '../src/reference/reference-data';
 
 const files = import.meta.glob<ReferenceFile>('/generated/reference-poses.json', { import: 'default', eager: true });
@@ -26,7 +26,7 @@ describe.skipIf(!file)('用示範者自己的動作跑判定（generated/referen
 
   config.routine.steps.forEach((step, i) => {
     it(`第 ${i + 1} 步「${step.name}」：重播示範片段可以通過`, () => {
-      const session = new Session([step], [targets[i]!], { hysteresisDeg: config.settings.judge.hysteresisDeg, repTimeoutSec: config.settings.judge.repTimeoutSec }, 0);
+      const session = new Session([step], [targets[i]!], engineOptions(config.settings.judge), 0);
       const fps = file!.fps;
       // 重複播放示範片段（最多 10 次），模擬使用者跟著做
       let t = 0;

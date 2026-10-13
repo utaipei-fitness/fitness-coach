@@ -38,6 +38,8 @@ export const settingsSchema = strict({
     toleranceDeg: degrees,
     extraToleranceDeg: z.number().min(0).max(90),
     hysteresisDeg: z.number().min(0).max(90),
+    holdGraceMs: z.number().int().min(0).max(5000),
+    checkpointWindowMs: z.number().int().min(0).max(5000),
     holdMs: z.number().int().min(0),
     reps: z.number().int().min(1),
     repTimeoutSec: z.number().positive(),

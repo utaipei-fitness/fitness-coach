@@ -5,7 +5,8 @@ import { Session, StepEngine } from '../src/engine/step-engine';
 import type { StepTargets } from '../src/reference/reference-data';
 
 const elbowDef = { name: '右手肘', side: 'right', type: 'joint', points: ['rightShoulder', 'rightElbow', 'rightWrist'] } as const;
-const opts = { hysteresisDeg: 5, repTimeoutSec: 5 };
+// 基本測試先關掉寬限（0），寬限另外測
+const opts = { hysteresisDeg: 5, repTimeoutSec: 5, holdGraceMs: 0, checkpointWindowMs: 0 };
 
 const staticStep: ResolvedStaticStep = {
   id: 'hold',
@@ -203,5 +204,67 @@ describe('整套練習 Session', () => {
     s.skip(66);
     // 差 60 度、容許 10 度：每幀超出 50 度
     expect(s.results[0]!.deviations['rightElbow']).toMatchObject({ frames: 2, outFrames: 2, worstFrames: 2, sumWorstExcess: 100 });
+  });
+});
+
+describe('降低敏感度（寬限）', () => {
+  const lenient = { ...opts, holdGraceMs: 300, checkpointWindowMs: 500 };
+
+  it('靜態：維持途中跑出範圍不到寬限時間，計時不歸零', () => {
+    const e = new StepEngine(staticStep, staticTargets, lenient, 0);
+    feed(e, 0, 500, 90);
+    const blip = feed(e, 533, 200, 150); // 抖出去 0.2 秒
+    expect(blip.heldMs).toBeGreaterThan(400);
+    feed(e, 766, 600, 90);
+    expect(e.result?.outcome).toBe('passed');
+    expect(e.result?.attempts).toBe(1);
+  });
+
+  it('靜態：跑出範圍超過寬限時間，仍然要重新計時', () => {
+    const e = new StepEngine(staticStep, staticTargets, lenient, 0);
+    feed(e, 0, 500, 90);
+    expect(feed(e, 533, 500, 150).heldMs).toBe(0);
+  });
+
+  it('靜態：寬限期間不累積維持時間（不會因為沒做到而過關）', () => {
+    const e = new StepEngine(staticStep, staticTargets, lenient, 0);
+    feed(e, 0, 500, 90);
+    // 接下來反覆「到位 0.1 秒、跑掉 0.2 秒」：只有到位的時間會累積（0.5 + 3 × 約 0.13 秒，未滿 1 秒）
+    let t = 533;
+    for (let i = 0; i < 3; i++) {
+      feed(e, t, 100, 90);
+      feed(e, t + 133, 200, 150);
+      t += 366;
+    }
+    expect(e.result).toBeNull();
+  });
+
+  const twoAngle: ResolvedDynamicStep = {
+    ...dynamicStep,
+    reps: 1,
+    angles: [
+      ...dynamicStep.angles,
+      { id: 'leftElbow', def: { ...elbowDef, name: '左手肘', side: 'left', points: ['leftShoulder', 'leftElbow', 'leftWrist'] }, tolerance: 15 },
+    ],
+  };
+  const twoTargets: StepTargets = {
+    stepId: 'bend',
+    checkpoints: dynamicTargets.checkpoints.map((c) => ({ ...c, angles: { rightElbow: c.angles['rightElbow']!, leftElbow: c.angles['rightElbow']! } })),
+  };
+
+  it('動態：兩手先後在 0.5 秒內到位，也算到達檢查點', () => {
+    const e = new StepEngine(twoAngle, twoTargets, lenient, 0);
+    e.update(0, { rightElbow: 170, leftElbow: 170 });
+    e.update(100, { rightElbow: 60, leftElbow: 120 }); // 右手先到
+    const v = e.update(400, { rightElbow: 110, leftElbow: 60 }); // 左手 0.3 秒後到，右手已離開
+    expect(v.checkpointIndex).toBe(2);
+  });
+
+  it('動態：先後差太久（超過 0.5 秒）就不算', () => {
+    const e = new StepEngine(twoAngle, twoTargets, lenient, 0);
+    e.update(0, { rightElbow: 170, leftElbow: 170 });
+    e.update(100, { rightElbow: 60, leftElbow: 120 });
+    const v = e.update(900, { rightElbow: 120, leftElbow: 60 });
+    expect(v.checkpointIndex).toBe(1);
   });
 });

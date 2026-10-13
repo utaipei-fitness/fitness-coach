@@ -1,0 +1,43 @@
+# 自動部署到 GitHub Pages：每次把程式推上 GitHub 的 main 分支，就會
+#   1. 安裝套件 → 2. 跑型別檢查與測試（沒過就不部署，網站不會壞掉）→ 3. 打包 → 4. 上線
+name: 部署網站
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # 也可以在 GitHub 網頁的 Actions 分頁手動按「Run workflow」
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build # 會自動下載 MediaPipe 模型
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

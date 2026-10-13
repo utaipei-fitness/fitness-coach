@@ -37,7 +37,7 @@
 | 3 | 步驟判定引擎、差異比較呈現、除錯面板 | ✅ 完成 |
 | 4 | 練習流程與畫面、錄製與重播 | 🟡 練習畫面已完成；個人資料、錄製與重播未做 |
 | 5 | 報告、MET 熱量估算、歷史紀錄 | 未開始 |
-| 6 | 部署到免費靜態網站 | 未開始 |
+| 6 | 部署到 GitHub Pages | 🟡 自動部署設定完成，等待建立 GitHub 儲存庫 |
 
 心率帶：等系統完整後再加入，**現在不要預先實作任何心率相關功能**。
 
@@ -58,10 +58,13 @@ fitness_coach/
 │   ├── angles.json         角度定義：每個可檢查的角度用哪些關鍵點計算
 │   └── routine.json        健身操步驟清單：每一步檢查哪些角度、容許值、提示文字
 ├── generated/              ★ 程式產生的資料，不要手改
-│   └── reference-poses.json  標準影片逐幀骨架（建置工具產生；目標角度在載入時即時計算）
+│   ├── reference-poses.json  標準影片逐幀骨架（建置工具產生；目標角度在載入時即時計算）
+│   └── clips/              每一步的示範片段 mp4 與 index.json（npm run clips 產生；正式網站只放這些片段）
 ├── assets/reference/       標準示範影片（不進 git）；_test-user.mp4 = 測試用的使用者影片
 ├── scripts/
-│   └── setup-mediapipe.mjs 自動準備 MediaPipe 執行檔與模型（dev/build 前自動執行）
+│   ├── setup-mediapipe.mjs 自動準備 MediaPipe 執行檔與模型（dev/build 前自動執行）
+│   └── export-clips.mjs    剪出每一步的示範片段（用 macOS 內建 avconvert）
+├── .github/workflows/deploy.yml  推上 GitHub 後自動測試、打包、部署到 GitHub Pages
 ├── public/                 （自動產生，不進 git）mediapipe/wasm 執行檔、models/ 三種姿態模型
 ├── src/
 │   ├── main.ts             進入點：載入設定 → 有錯顯示錯誤清單，沒錯進主畫面
@@ -150,6 +153,7 @@ config/*.json → 設定檢查（src/config）→ AppConfig ─┐
 - `enabled: false` 可暫時停用某一步，不用刪掉。
 - **PoseFrame 的 x、y 是 0～1 的相對座標**，算角度前要乘回影像寬高（`width`、`height`），否則直式影片的角度會變形。
 - 標準影片若有多位示範者，用 `routine.json` 的 `reference.area` 指定要用的範圍（擷取時只看這個範圍）。
+- 示範影片來源優先順序：`generated/clips/` 的片段（正式網站也有）→ 整支影片（只在開發時）→ 示範者骨架。官方整支影片不會上網站。
 - 標準畫面預設只放示範影片（`display.referenceSkeleton: false`）；沒有影片時自動改畫骨架。示範影片速度預設 `display.referenceSpeed`，使用者可在畫面上切換。
 - 2D 正面拍攝下，左右膝等角度可能因站位角度而不對稱（例如深蹲目標左膝 119°、右膝 93°），容許角度要留寬一點。
 - 開發測試：瀏覽器分頁看不到時影片不會播放；開發模式可在主控台用 `__practiceTick()` 手動推進一幀。
@@ -168,6 +172,8 @@ config/*.json → 設定檢查（src/config）→ AppConfig ─┐
 | `npm run check` | 型別檢查＋測試（**每次修改後都要跑**） |
 | `npm run build` | 產生正式版網站到 `dist/` |
 | `npm run dev:phone` | 手機測試：開 HTTPS 伺服器，終端機會印出區網網址與 QR code |
+| `npm run clips` | 改了步驟或 `clip` 時間後，重新剪示範片段（測試會提醒你） |
+| `git push` | 更新正式網站（GitHub 會自動測試並部署，約 2 分鐘） |
 | `npm run setup` | 重新準備 MediaPipe 檔案（通常不用手動跑，dev/build 會自動執行） |
 | 開 http://localhost:5173/tools/reference.html | 標準動作建置工具：擷取骨架、找時間點、看目標角度 |
 | ⏳ 部署 | 階段 6 建立 |
@@ -194,7 +200,8 @@ config/*.json → 設定檢查（src/config）→ AppConfig ─┐
    - 動態動作 `type: "dynamic"`，填 `checkpoints`（至少 2 個，時間依序變大）與 `reps`
    - `angles` 列出要檢查的角度代號，可另外設定 `tolerance`、`hintLow`、`hintHigh`
 3. 用建置工具（`/tools/reference.html`）播放影片、逐幀找出時間點，填回 `routine.json`。工具下方會立刻列出新的目標角度。
-4. 執行 `npm run check`：`reference-integration.test.ts` 會用示範者自己的動作檢查這一步能不能通過，過不了代表時間點或容許角度要調。
+4. 執行 `npm run clips` 重新剪示範片段。
+5. 執行 `npm run check`：`reference-integration.test.ts` 會用示範者自己的動作檢查這一步能不能通過，過不了代表時間點或容許角度要調。
 
 ### 調整容許範圍
 

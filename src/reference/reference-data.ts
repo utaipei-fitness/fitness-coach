@@ -131,6 +131,35 @@ export async function loadReferenceFile(): Promise<ReferenceFile | null> {
   return load ? await load() : null;
 }
 
+// ───────────── 示範片段（npm run clips 產生，正式網站用） ─────────────
+
+export interface ClipIndex {
+  video: string;
+  clips: Record<string, { file: string; start: number; end: number }>;
+}
+
+const clipIndex = import.meta.glob<ClipIndex>('/generated/clips/index.json', { import: 'default', eager: true })['/generated/clips/index.json'];
+const clipUrls = import.meta.glob<string>('/generated/clips/*.mp4', { query: '?url', import: 'default', eager: true });
+
+/**
+ * 這一步的示範片段。片段要和目前的影片、clip 時間一致才使用（否則回傳 null，請重新執行 npm run clips）。
+ * offset = 片段開頭在原影片中的秒數。
+ */
+export function stepClip(step: ResolvedStep, video: string, index: ClipIndex | undefined = clipIndex): { url: string; offset: number } | null {
+  const entry = index?.clips[step.id];
+  if (!index || !entry || index.video !== video || entry.start !== step.clip[0] || entry.end !== step.clip[1]) return null;
+  const url = clipUrls[`/generated/clips/${entry.file}`];
+  return url ? { url, offset: entry.start } : null;
+}
+
+/** 片段和設定對不上的步驟名稱（給建置工具與測試提醒用） */
+export function staleClipSteps(steps: ResolvedStep[], video: string, index: ClipIndex | undefined = clipIndex): string[] {
+  return steps.filter((s) => {
+    const e = index?.clips[s.id];
+    return !index || !e || index.video !== video || e.start !== s.clip[0] || e.end !== s.clip[1];
+  }).map((s) => s.name);
+}
+
 /** 標準影片的網址（只有在開發時、且影片放在 assets/reference/ 才有） */
 export function referenceVideoUrl(video: string): string | null {
   return import.meta.env.DEV ? `/assets/reference/${encodeURIComponent(video)}` : null;

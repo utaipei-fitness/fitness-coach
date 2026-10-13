@@ -1,0 +1,35 @@
+{
+  "video": "jiuzuo-exercise.mp4",
+  "clips": {
+    "ready": {
+      "file": "ready.mp4",
+      "start": 231.5,
+      "end": 234
+    },
+    "push-sides": {
+      "file": "push-sides.mp4",
+      "start": 53,
+      "end": 55.8
+    },
+    "push-up": {
+      "file": "push-up.mp4",
+      "start": 58.6,
+      "end": 61.4
+    },
+    "squat": {
+      "file": "squat.mp4",
+      "start": 101,
+      "end": 105.8
+    },
+    "side-lunge": {
+      "file": "side-lunge.mp4",
+      "start": 175.5,
+      "end": 179
+    },
+    "jumping-jack": {
+      "file": "jumping-jack.mp4",
+      "start": 203,
+      "end": 206
+    }
+  }
+}

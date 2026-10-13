@@ -7,7 +7,7 @@ import { alignToReference, arrowSymbol, correctionArrow, topCorrections, type Ar
 import { onVideoFrame, playVideo, type VideoSource } from '../../input/video-source';
 import { getEstimator, PosePipeline } from '../../pose/pipeline';
 import type { PoseFrame } from '../../pose/types';
-import { frameAt, referenceVideoUrl, type ReferenceData, type StepTargets } from '../../reference/reference-data';
+import { frameAt, referenceVideoUrl, stepClip, type ReferenceData, type StepTargets } from '../../reference/reference-data';
 import { el } from '../dom';
 import { PerfMeter } from '../perf-meter';
 import { drawSkeleton } from '../skeleton';
@@ -72,9 +72,11 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
   let speed = loadSpeed(settings.display.referenceSpeed);
   const speedButtons = SPEEDS.map((s) => el('button', { class: 'pr-speed-btn', 'data-speed': String(s) }, `${s}×`));
   const speedBar = el('div', { class: 'pr-speed' }, el('span', {}, '速度'), ...speedButtons);
-  // 有示範影片就只放影片；沒有影片（例如正式網站）才改畫示範者骨架
-  const hasRefVideo = refVideoUrl !== null;
-  const drawRefSkeleton = settings.display.referenceSkeleton || !hasRefVideo;
+  // 示範影片來源（每一步換一次）：優先用剪好的片段（正式網站也有），其次整支影片（只在開發時有）
+  // 都沒有時才改畫示範者骨架，避免畫面空白
+  let hasRefVideo = false;
+  let refOffset = 0;
+  let drawRefSkeleton = settings.display.referenceSkeleton;
 
   const userCanvas = el('canvas', { class: 'overlay' });
   const userStage = el('div', { class: `stage${selfie ? ' mirrored' : ''}` }, source.video, userCanvas);
@@ -155,12 +157,23 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     saveSpeed(s);
     applySpeed();
   });
-  if (refVideoUrl) {
-    refVideo.src = refVideoUrl;
-    refVideo.addEventListener('loadedmetadata', applySpeed);
-    void refVideo.play().catch(() => {});
-  }
+  refVideo.addEventListener('loadedmetadata', applySpeed);
   applySpeed();
+
+  const loadReferenceVideo = (stepIndex: number) => {
+    const step = steps[stepIndex]!;
+    const clip = stepClip(step, reference.file.video);
+    const src = clip?.url ?? refVideoUrl;
+    hasRefVideo = src !== null;
+    refOffset = clip?.offset ?? 0;
+    drawRefSkeleton = settings.display.referenceSkeleton || !hasRefVideo;
+    if (!src) return;
+    if (refVideo.getAttribute('src') !== src) refVideo.src = src;
+    const seek = () => (refVideo.currentTime = Math.max(0, step.clip[0] - refOffset));
+    if (refVideo.readyState >= 1) seek();
+    else refVideo.addEventListener('loadedmetadata', seek, { once: true });
+    void refVideo.play().catch(() => {});
+  };
   relaxButton.addEventListener('click', () => {
     session?.relax(settings.giveUp.relaxExtraDeg, performance.now());
     stuckBox.hidden = true;
@@ -200,7 +213,7 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     );
     checkpointChips.hidden = step.type !== 'dynamic';
     clipStartT = performance.now();
-    if (refVideo.src) refVideo.currentTime = step.clip[0];
+    loadReferenceVideo(i);
     stuckBox.hidden = true;
     stuckDismissedAt = -1;
   };
@@ -209,8 +222,12 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
   const referenceTime = (now: number): number => {
     const [a, b] = steps[stepIndex]!.clip;
     if (hasRefVideo && refVideo.readyState >= 2) {
-      if (refVideo.currentTime >= b || refVideo.currentTime < a - 0.5) refVideo.currentTime = a;
-      return refVideo.currentTime;
+      const t = refVideo.currentTime + refOffset;
+      if (t >= b - 0.05 || t < a - 0.5 || refVideo.ended) {
+        refVideo.currentTime = a - refOffset;
+        if (refVideo.paused) void refVideo.play().catch(() => {});
+      }
+      return t;
     }
     return a + ((((now - clipStartT) / 1000) * speed) % (b - a));
   };

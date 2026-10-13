@@ -26,6 +26,25 @@ export interface PracticeOptions {
 }
 
 const UI_UPDATE_MS = 120;
+const SPEEDS = [0.5, 0.6, 0.8, 1] as const;
+const SPEED_KEY = 'fitness-coach.reference-speed';
+
+function loadSpeed(fallback: number): number {
+  try {
+    const v = Number(localStorage.getItem(SPEED_KEY));
+    return v > 0 ? v : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveSpeed(v: number): void {
+  try {
+    localStorage.setItem(SPEED_KEY, String(v));
+  } catch {
+    /* 無法使用瀏覽器儲存時，只在這次練習有效 */
+  }
+}
 const TOAST_MS = 1500;
 
 export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
@@ -49,9 +68,13 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
   const refVideo = el('video', { class: 'pr-ref-video', muted: '', playsinline: '', preload: 'auto' });
   refVideo.muted = true;
   const ring = new ProgressRing();
-  const refToggle = el('button', { class: 'pr-chip-btn' });
-  let showRefVideo = refVideoUrl !== null;
-  refToggle.hidden = refVideoUrl === null;
+  // 示範影片的播放速度（記在這台裝置上；沒選過就用 settings.json 的預設值）
+  let speed = loadSpeed(settings.display.referenceSpeed);
+  const speedButtons = SPEEDS.map((s) => el('button', { class: 'pr-speed-btn', 'data-speed': String(s) }, `${s}×`));
+  const speedBar = el('div', { class: 'pr-speed' }, el('span', {}, '速度'), ...speedButtons);
+  // 有示範影片就只放影片；沒有影片（例如正式網站）才改畫示範者骨架
+  const hasRefVideo = refVideoUrl !== null;
+  const drawRefSkeleton = settings.display.referenceSkeleton || !hasRefVideo;
 
   const userCanvas = el('canvas', { class: 'overlay' });
   const userStage = el('div', { class: `stage${selfie ? ' mirrored' : ''}` }, source.video, userCanvas);
@@ -82,7 +105,7 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
       el(
         'section',
         { class: 'pr-panels' },
-        el('div', { class: 'pr-panel pr-ref' }, refVideo, refCanvas, el('span', { class: 'pr-label' }, '標準動作'), ring.element, refToggle),
+        el('div', { class: 'pr-panel pr-ref' }, refVideo, refCanvas, el('span', { class: 'pr-label' }, '標準動作'), ring.element, speedBar),
         el('div', { class: 'pr-panel pr-user' }, userStage, el('span', { class: 'pr-label' }, '你的動作'), checkpointChips),
       ),
       feedback,
@@ -121,20 +144,23 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     close();
     opts.onExit();
   });
-  refToggle.addEventListener('click', () => {
-    showRefVideo = !showRefVideo;
-    updateRefToggle();
-  });
-  const updateRefToggle = () => {
-    refToggle.textContent = showRefVideo ? '只看骨架' : '顯示原影片';
-    if (showRefVideo && refVideoUrl) {
-      if (!refVideo.src) refVideo.src = refVideoUrl;
-      void refVideo.play().catch(() => {});
-    } else {
-      refVideo.pause();
-    }
+  const applySpeed = () => {
+    refVideo.playbackRate = speed;
+    for (const b of speedButtons) b.classList.toggle('active', Number(b.dataset['speed']) === speed);
   };
-  updateRefToggle();
+  speedBar.addEventListener('click', (e) => {
+    const s = Number((e.target as HTMLElement).dataset['speed']);
+    if (!s) return;
+    speed = s;
+    saveSpeed(s);
+    applySpeed();
+  });
+  if (refVideoUrl) {
+    refVideo.src = refVideoUrl;
+    refVideo.addEventListener('loadedmetadata', applySpeed);
+    void refVideo.play().catch(() => {});
+  }
+  applySpeed();
   relaxButton.addEventListener('click', () => {
     session?.relax(settings.giveUp.relaxExtraDeg, performance.now());
     stuckBox.hidden = true;
@@ -182,11 +208,11 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
   // ── 標準畫面的時間（循環播放這一步的示範片段） ──
   const referenceTime = (now: number): number => {
     const [a, b] = steps[stepIndex]!.clip;
-    if (showRefVideo && refVideo.src && refVideo.readyState >= 2) {
+    if (hasRefVideo && refVideo.readyState >= 2) {
       if (refVideo.currentTime >= b || refVideo.currentTime < a - 0.5) refVideo.currentTime = a;
       return refVideo.currentTime;
     }
-    return a + (((now - clipStartT) / 1000) % (b - a));
+    return a + ((((now - clipStartT) / 1000) * speed) % (b - a));
   };
 
   // ── 每一幀 ──
@@ -254,12 +280,12 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     const ctx = refCanvas.getContext('2d')!;
     ctx.fillStyle = '#e8eef0';
     ctx.fillRect(0, 0, width, height);
-    if (showRefVideo && refVideo.readyState >= 2) {
+    if (hasRefVideo && refVideo.readyState >= 2) {
       const [a0, a1] = reference.file.area;
       const vw = refVideo.videoWidth;
       ctx.drawImage(refVideo, vw * a0, 0, vw * (a1 - a0), refVideo.videoHeight, 0, 0, width, height);
     }
-    if (!refFrame) return;
+    if (!refFrame || !drawRefSkeleton) return;
     const lw = (height * settings.display.skeletonWidth) / 100;
     // 標準骨架已換成「練習者的左右」；鏡像模式下畫的時候翻回來，才會和示範者的影像重疊
     if (mirror) flipHorizontal(ctx);

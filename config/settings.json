@@ -47,7 +47,9 @@
     //   "sameSide" = 依口令同側：示範者的右手 ↔ 你的右手
     "mirrorMode": "mirror",
     "selfieView": true,     // 鏡頭畫面以自拍鏡像方式顯示（影片檔不鏡像）
-    "skeletonWidth": 1.5    // 骨架線條粗細，相對畫面高度的百分比（1.5 = 畫面高度的 1.5%）
+    "skeletonWidth": 1.5,   // 骨架線條粗細，相對畫面高度的百分比（1.5 = 畫面高度的 1.5%）
+    "referenceSkeleton": false, // 標準動作畫面是否畫示範者骨架與你的疊合骨架（false = 只放示範影片）
+    "referenceSpeed": 0.8   // 示範影片預設播放速度（1 = 原速）；練習時可在畫面上切換
   },
 
   // ── 熱量估算：kcal/分鐘 = MET × 3.5 × 體重(kg) ÷ 200 ──

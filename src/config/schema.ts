@@ -65,6 +65,8 @@ export const settingsSchema = strict({
     mirrorMode: z.enum(['mirror', 'sameSide']),
     selfieView: z.boolean(),
     skeletonWidth: z.number().positive().max(20),
+    referenceSkeleton: z.boolean(),
+    referenceSpeed: z.number().min(0.25).max(2),
   }),
   energy: strict({
     met: z.number().positive().max(25),

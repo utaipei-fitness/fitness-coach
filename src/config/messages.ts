@@ -35,6 +35,8 @@ export const FIELD_LABELS: Record<string, string> = {
   mirrorMode: '左右對應方式',
   selfieView: '自拍鏡像顯示',
   skeletonWidth: '骨架線條粗細',
+  referenceSkeleton: '標準畫面顯示骨架',
+  referenceSpeed: '示範影片速度',
   energy: '熱量估算',
   met: 'MET 值',
   // angles.json

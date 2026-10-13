@@ -173,6 +173,35 @@
   color: #fff;
 }
 
+.pr-speed {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 4px 6px 4px 12px;
+  border-radius: 999px;
+  font-size: clamp(12px, 1.8vmin, 16px);
+  color: var(--pr-sub);
+}
+
+.pr-speed-btn {
+  font-size: inherit;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--pr-ink);
+  font-weight: 600;
+}
+
+.pr-speed-btn.active {
+  background: var(--pr-teal);
+  color: #fff;
+}
+
 .pr-chip-btn {
   position: absolute;
   bottom: 10px;

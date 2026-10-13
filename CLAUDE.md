@@ -150,6 +150,7 @@ config/*.json → 設定檢查（src/config）→ AppConfig ─┐
 - `enabled: false` 可暫時停用某一步，不用刪掉。
 - **PoseFrame 的 x、y 是 0～1 的相對座標**，算角度前要乘回影像寬高（`width`、`height`），否則直式影片的角度會變形。
 - 標準影片若有多位示範者，用 `routine.json` 的 `reference.area` 指定要用的範圍（擷取時只看這個範圍）。
+- 標準畫面預設只放示範影片（`display.referenceSkeleton: false`）；沒有影片時自動改畫骨架。示範影片速度預設 `display.referenceSpeed`，使用者可在畫面上切換。
 - 2D 正面拍攝下，左右膝等角度可能因站位角度而不對稱（例如深蹲目標左膝 119°、右膝 93°），容許角度要留寬一點。
 - 開發測試：瀏覽器分頁看不到時影片不會播放；開發模式可在主控台用 `__practiceTick()` 手動推進一幀。
 - `<video>` 必須先放進畫面再播放（`playVideo()`），否則瀏覽器可能為了省電暫停它。

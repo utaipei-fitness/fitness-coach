@@ -37,7 +37,7 @@
 | 3 | 步驟判定引擎、差異比較呈現、除錯面板 | ✅ 完成 |
 | 4 | 練習流程與畫面、錄製與重播 | 🟡 練習畫面已完成；個人資料、錄製與重播未做 |
 | 5 | 報告、MET 熱量估算、歷史紀錄 | 未開始 |
-| 6 | 部署到 GitHub Pages | 🟡 自動部署設定完成，等待建立 GitHub 儲存庫 |
+| 6 | 部署到 GitHub Pages | ✅ 上線：https://utaipei-fitness.github.io/fitness-coach/ |
 
 心率帶：等系統完整後再加入，**現在不要預先實作任何心率相關功能**。
 
@@ -177,6 +177,13 @@ config/*.json → 設定檢查（src/config）→ AppConfig ─┐
 | `npm run setup` | 重新準備 MediaPipe 檔案（通常不用手動跑，dev/build 會自動執行） |
 | 開 http://localhost:5173/tools/reference.html | 標準動作建置工具：擷取骨架、找時間點、看目標角度 |
 | ⏳ 部署 | 階段 6 建立 |
+
+### 部署（正式網站）
+
+- 網址：https://utaipei-fitness.github.io/fitness-coach/ ；儲存庫：https://github.com/utaipei-fitness/fitness-coach （公開）
+- 更新網站：commit 後執行 `git push`。GitHub Actions 會先跑 `npm run check`，通過才部署，約 2 分鐘。進度看儲存庫的 Actions 分頁。
+- 這台 Mac 的 gh 是 Intel 版（`~/Downloads/gh_2.102.0_macOS_amd64/bin/gh`），它呼叫 git 會出錯；建立儲存庫等操作請改用 `gh api`。git 推送用的登入資訊已設定在這個專案的 `.git/config`。
+- 公開內容：程式碼、設定、標準骨架、6 段示範片段。不公開：整支官方影片、`_test-user.mp4`（都在 .gitignore）。
 
 ### 手機測試的步驟與常見問題
 

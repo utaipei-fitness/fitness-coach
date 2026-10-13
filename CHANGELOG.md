@@ -2,6 +2,13 @@
 
 每次修改在最上面新增一段。
 
+## 2026-10-13　階段 6：部署上線
+
+### 新增
+- 網站上線：https://utaipei-fitness.github.io/fitness-coach/ （GitHub 儲存庫 utaipei-fitness/fitness-coach）。
+- 開啟網頁時先顯示「載入中…」，避免載入標準資料時看起來像空白。
+- commit 作者 email 改為 GitHub 不公開的 noreply 地址。
+
 ## 2026-10-13　準備部署：示範片段與自動部署
 
 ### 新增

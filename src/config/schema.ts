@@ -71,6 +71,19 @@ export const settingsSchema = strict({
     referenceSkeleton: z.boolean(),
     referenceSpeed: z.number().min(0.25).max(2),
   }),
+  voice: strict({
+    enabled: z.boolean(),
+    rate: z.number().min(0.5).max(2),
+    correctionIntervalSec: z.number().min(0),
+    repeatSameSec: z.number().min(0),
+    minPersistMs: z.number().int().min(0),
+    notVisibleIntervalSec: z.number().min(0),
+  }),
+  scoring: strict({
+    completionWeight: z.number().min(0).max(1),
+    perfectWithin: z.number().min(0).max(1),
+    atToleranceScore: z.number().min(0).max(100),
+  }),
   energy: strict({
     met: z.number().positive().max(25),
   }),

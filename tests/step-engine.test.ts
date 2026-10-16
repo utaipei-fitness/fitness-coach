@@ -305,3 +305,35 @@ describe('跟做（follow）', () => {
     expect(e.update(120000, {}, false).stuck).toBe(false);
   });
 });
+
+describe('評分資料（完整度、精確度）', () => {
+  it('靜態通過：完整度 1，精確度取成功維持那段的偏差', () => {
+    const e = new StepEngine(staticStep, staticTargets, opts, 0);
+    feed(e, 0, 1100, 95); // 差 5 度、容許 10 度 → 比例 0.5
+    expect(e.result?.completion).toBe(1);
+    expect(e.result!.accuracyRatios.length).toBeGreaterThan(20);
+    e.result!.accuracyRatios.forEach((r) => expect(r).toBeCloseTo(0.5));
+  });
+
+  it('靜態跳過：完整度 = 最長維持時間的比例', () => {
+    const e = new StepEngine(staticStep, staticTargets, opts, 0);
+    feed(e, 0, 500, 90);
+    feed(e, 533, 500, 150);
+    expect(e.skip(1100).completion).toBeCloseTo(0.5, 1);
+  });
+
+  it('動態跳過：完整度依完成次數與檢查點計算', () => {
+    const e = new StepEngine(dynamicStep, dynamicTargets, opts, 0); // 2 次 × 3 個檢查點
+    let t = 0;
+    for (const a of [170, 60, 170, 170]) e.update((t += 100), { rightElbow: a }); // 完成 1 次，又到第 1 個檢查點
+    expect(e.skip(t + 100).completion).toBeCloseTo((1 + 1 / 3) / 2);
+  });
+
+  it('放寬後通過，精確度仍用原本的容許角度計算', () => {
+    const e = new StepEngine(staticStep, staticTargets, opts, 0);
+    e.relax(10, 0);
+    feed(e, 0, 1100, 105); // 差 15 度：放寬後算達標，但原本容許 10 度 → 比例 1.5
+    expect(e.result?.outcome).toBe('passed');
+    e.result!.accuracyRatios.forEach((r) => expect(r).toBeCloseTo(1.5));
+  });
+});

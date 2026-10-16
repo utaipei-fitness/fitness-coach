@@ -91,10 +91,13 @@ fitness_coach/
 │   │   └── step-engine.ts  步驟判定狀態機（靜態維持、動態檢查點、遲滯、逾時、跳過、放寬）＋整套 Session
 │   │                       ——不依賴畫面程式碼，可單獨測試
 │   ├── feedback/
-│   │   └── feedback.ts     最需要修正的 1～2 項、修正方向箭頭、使用者骨架對齊到標準骨架
+│   │   ├── feedback.ts     最需要修正的 1～2 項、修正方向箭頭、使用者骨架對齊到標準骨架
+│   │   └── voice.ts        語音教練（瀏覽器內建語音）與防囉嗦規則
+│   ├── report/
+│   │   └── score.ts        評分：完整度、精確度、總分與評語
+│   ├── assets/             圖片（臺北市立大學校徽）
 │   ├── tools/
 │   │   └── reference-tool.ts  建置工具的程式（擷取骨架、看時間與角度、目標角度表）
-│   ├── report/             ⏳ 報告與熱量估算（階段 5）
 │   ├── storage/            ⏳ 本機儲存：個人資料、歷史紀錄、錄製檔（階段 4、5）
 │   └── ui/                 畫面
 │       ├── dom.ts          建立畫面元素的小工具（文字一律當純文字放入）
@@ -144,6 +147,8 @@ config/*.json → 設定檢查（src/config）→ AppConfig ─┐
   - `mirrorMode: "mirror"`（照畫面跟做）：程式會先把示範者的骨架左右鏡射（x 翻轉＋左右標籤對調），再算目標角度。
   - `mirrorMode: "sameSide"`（依口令同側）：直接用示範者的骨架。
   - 畫面上使用者自己的影像以自拍鏡像方式顯示（`selfieView`），只影響顯示，不影響計算。
+- **語音**：iPhone 規定第一次發聲要在使用者點擊的當下，所以首頁的開始按鈕會先呼叫 `primeSpeech()`。新增「開始練習」類的按鈕時記得也要呼叫。
+- **評分**：引擎在 `StepResult` 記錄 `completion` 與 `accuracyRatios`（偏差 ÷ 原本容許角度），`report/score.ts` 依 `settings.json` 的 `scoring` 換算成分數。
 - **步驟類型**（`config/routine.json`）：`static` 靜態維持、`dynamic` 依序經過檢查點、`follow` 跟做（正面量不準角度的動作，人在畫面中做滿秒數即可，不判定角度）。
 - 正面拍攝時，往後蹲的後腳踝常被身體擋住（看不清楚 → 判定暫停）。這類動作只檢查看得清楚的關節；新增動作後，`reference-integration.test.ts` 會抓出這種問題。
 - **角度類型**（`config/angles.json`）：

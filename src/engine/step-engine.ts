@@ -82,6 +82,14 @@ export interface StepResult {
   durationMs: number;
   relaxed: boolean;
   deviations: Record<string, AngleDeviation>;
+  /** 完整度 0～1：做完多少（通過 = 1；跳過時依已維持的時間或已完成的次數計算） */
+  completion: number;
+  /**
+   * 精確度的原始資料：每個角度樣本的「偏差 ÷ 原本的容許角度」（0 = 完全一樣，1 = 剛好在容許邊界）。
+   * 靜態取成功維持那段時間的每一幀；動態取每次到達檢查點時最接近目標的那一刻；跟做沒有（空陣列）。
+   * 用原本的容許角度計算，所以按「放寬標準再試」不會讓精確度虛高。
+   */
+  accuracyRatios: number[];
 }
 
 /** 超出容許角度多少度 */
@@ -111,6 +119,12 @@ export class StepEngine {
   /** 動態：每個角度最近一次對「目前檢查點」到位的時間 */
   private lastInAt = new Map<string, number>();
   private deviations: Record<string, AngleDeviation> = {};
+  // ── 評分用的資料 ──
+  private allRatios: number[] = [];
+  private holdRatios: number[] = [];
+  private maxHeldMs = 0;
+  private cpMinRatio = new Map<string, number>();
+  private repRatios: number[] = [];
   private finished: StepResult | null = null;
   private lastView: StepView | null = null;
 
@@ -140,9 +154,17 @@ export class StepEngine {
     const visible = present && checks.every((c) => c.value !== null);
     const allInRange = visible && checks.every((c) => c.inRange);
     if (visible) this.recordDeviations(checks);
+    const ratios = visible ? checks.map((c) => Math.abs(c.diff!) / Math.max(c.tolerance - this.extraTolerance, 1)) : [];
+    if (visible && checks.length > 0) {
+      this.allRatios.push(...ratios);
+      checks.forEach((c, i) => this.cpMinRatio.set(c.id, Math.min(this.cpMinRatio.get(c.id) ?? Infinity, ratios[i]!)));
+    }
 
     if (visible) {
-      if (this.step.type === 'static') this.updateStatic(allInRange, dt, t);
+      if (this.step.type === 'static') {
+        if (allInRange) this.holdRatios.push(...ratios);
+        this.updateStatic(allInRange, dt, t);
+      }
       else if (this.step.type === 'dynamic') this.updateDynamic(checks, t);
       else this.updateFollow(dt, t);
     }
@@ -204,6 +226,7 @@ export class StepEngine {
       this.holding = true;
       this.outSince = null;
       this.heldMs += dt;
+      this.maxHeldMs = Math.max(this.maxHeldMs, this.heldMs);
       if (this.step.type === 'static' && this.heldMs >= this.step.holdMs) this.finish('passed', t);
     } else if (this.holding) {
       // 短暫跑出範圍（例如骨架抖一下）：寬限時間內暫停計時、不歸零
@@ -212,6 +235,7 @@ export class StepEngine {
         // 真的跑掉了：算一次失敗的嘗試，重新計時
         this.failed++;
         this.heldMs = 0;
+        this.holdRatios = [];
         this.holding = false;
         this.outSince = null;
       }
@@ -233,6 +257,8 @@ export class StepEngine {
     // 每個角度都在最近一小段時間內到位過，就算到達這個檢查點
     const reached = checks.every((c) => t - (this.lastInAt.get(c.id) ?? -Infinity) <= this.opts.checkpointWindowMs);
     if (reached) {
+      this.repRatios.push(...this.cpMinRatio.values());
+      this.cpMinRatio.clear();
       if (this.checkpointIndex === 0) this.attempts++;
       if (this.checkpointIndex === last) {
         this.reps++;
@@ -251,6 +277,7 @@ export class StepEngine {
       this.checkpointSince = t;
       this.inRange.clear();
       this.lastInAt.clear();
+      this.cpMinRatio.clear();
     }
   }
 
@@ -280,8 +307,26 @@ export class StepEngine {
       durationMs: t - this.startT,
       relaxed: this.relaxed,
       deviations: this.deviations,
+      completion: this.completion(outcome),
+      accuracyRatios: this.accuracyRatios(outcome),
     };
     return this.finished;
+  }
+
+  private completion(outcome: StepResult['outcome']): number {
+    if (outcome === 'passed') return 1;
+    const step = this.step;
+    if (step.type === 'static') return Math.min(this.maxHeldMs / step.holdMs, 1);
+    if (step.type === 'follow') return Math.min(this.heldMs / (step.durationSec * 1000), 1);
+    return Math.min((this.reps + this.checkpointIndex / step.checkpoints.length) / step.reps, 1);
+  }
+
+  private accuracyRatios(outcome: StepResult['outcome']): number[] {
+    const step = this.step;
+    if (step.type === 'follow') return [];
+    if (step.type === 'static') return outcome === 'passed' ? this.holdRatios : this.allRatios;
+    // 動態：已到達的檢查點；跳過時加上「正在努力的那個檢查點」最接近目標的一刻
+    return outcome === 'passed' ? this.repRatios : [...this.repRatios, ...this.cpMinRatio.values()];
   }
 }
 

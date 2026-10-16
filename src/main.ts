@@ -33,6 +33,7 @@ async function main(): Promise<void> {
   const goHome = (error?: string) =>
     renderHome(root, config, { notReady: prepared.ok ? null : prepared.reasons, error }, {
       onPractice: () => practice(() => openCamera(config.settings.camera)),
+      onPracticeStep: (index) => practice(() => openCamera(config.settings.camera), index),
       onPracticeWithFile: (file) => practice(() => openVideoFile(file)),
       onCameraTest: async () => {
         try {
@@ -44,7 +45,8 @@ async function main(): Promise<void> {
       },
     });
 
-  const practice = async (open: () => Promise<VideoSource>): Promise<void> => {
+  /** @param only 只練某一步（首頁點選單一動作時）；不給就練整套 */
+  const practice = async (open: () => Promise<VideoSource>, only?: number): Promise<void> => {
     if (!prepared.ok) return goHome();
     let source: VideoSource;
     try {
@@ -56,11 +58,12 @@ async function main(): Promise<void> {
       config,
       source,
       reference: prepared.reference,
-      targets: prepared.targets,
+      steps: only === undefined ? config.routine.steps : [config.routine.steps[only]!],
+      targets: only === undefined ? prepared.targets : [prepared.targets[only]!],
       onExit: () => goHome(),
       onFinish: (session) =>
         renderFinish(root, config, session, {
-          again: () => void practice(open),
+          again: () => void practice(open, only),
           home: () => goHome(),
         }),
     });

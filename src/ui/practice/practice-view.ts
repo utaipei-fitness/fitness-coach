@@ -1,9 +1,11 @@
 // 練習畫面：左（或上）標準動作、右（或下）使用者即時畫面，一次進行一步。
 // 這裡只負責「接線＋顯示」：判定在 engine/、差異計算在 feedback/、角度在 angles/。
 import { angleValue } from '../../angles/compute';
-import type { AppConfig } from '../../config/load';
+import type { AppConfig, ResolvedStep } from '../../config/load';
 import { engineOptions, Session, type StepView } from '../../engine/step-engine';
-import { alignToReference, arrowSymbol, correctionArrow, topCorrections, type Arrow } from '../../feedback/feedback';
+import { alignToReference, arrowSymbol, correctionArrow, topCorrections, type Arrow, type Correction } from '../../feedback/feedback';
+import { browserSpeaker, VoiceCoach } from '../../feedback/voice';
+import { scoreSession } from '../../report/score';
 import { onVideoFrame, playVideo, type VideoSource } from '../../input/video-source';
 import { getEstimator, PosePipeline } from '../../pose/pipeline';
 import type { PoseFrame } from '../../pose/types';
@@ -20,6 +22,8 @@ export interface PracticeOptions {
   config: AppConfig;
   source: VideoSource;
   reference: ReferenceData;
+  /** 這次要練的步驟（整套，或從首頁點選的單一動作）；targets 與它一一對應 */
+  steps: ResolvedStep[];
   targets: StepTargets[];
   onExit(): void;
   onFinish(session: Session): void;
@@ -46,11 +50,46 @@ function saveSpeed(v: number): void {
   }
 }
 const TOAST_MS = 1500;
+const VOICE_KEY = 'fitness-coach.voice';
+
+function loadVoiceOn(fallback: boolean): boolean {
+  try {
+    const v = localStorage.getItem(VOICE_KEY);
+    return v === null ? fallback : v === '1';
+  } catch {
+    return fallback;
+  }
+}
+
+function saveVoiceOn(on: boolean): void {
+  try {
+    localStorage.setItem(VOICE_KEY, on ? '1' : '0');
+  } catch {
+    /* 忽略 */
+  }
+}
+
+/** 語音念的修正提示：優先用設定檔的提示文字 */
+function spokenCorrection(c: Correction): string {
+  return c.hint || `注意${c.name}`;
+}
 
 export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
   const { config, source, reference, targets } = opts;
   const { settings } = config;
-  const steps = config.routine.steps;
+  const steps = opts.steps;
+
+  // ── 語音教練 ──
+  const speaker = browserSpeaker(settings.voice.rate);
+  const coach = new VoiceCoach(speaker ?? { speak: () => {}, cancel: () => {} }, {
+    correctionIntervalMs: settings.voice.correctionIntervalSec * 1000,
+    repeatSameMs: settings.voice.repeatSameSec * 1000,
+    minPersistMs: settings.voice.minPersistMs,
+    notVisibleIntervalMs: settings.voice.notVisibleIntervalSec * 1000,
+  });
+  coach.setEnabled(speaker !== null && loadVoiceOn(settings.voice.enabled));
+  let prevReps = 0;
+  let prevHeld = 0;
   const mirror = settings.display.mirrorMode === 'mirror';
   const selfie = source.kind === 'camera' && settings.display.selfieView;
   const minVis = settings.judge.minVisibility;
@@ -61,6 +100,8 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
   const stepDesc = el('p', { class: 'pr-step-desc' });
   const dots = el('ol', { class: 'pr-dots' }, ...steps.map((s) => el('li', { title: s.name })));
   const debugButton = el('button', { class: 'pr-icon-btn', title: '除錯面板（快捷鍵 D）' }, '🐞');
+  const voiceButton = el('button', { class: 'pr-icon-btn', title: '語音提示開／關' }, coach.enabled ? '🔊' : '🔇');
+  voiceButton.hidden = speaker === null;
   const exitButton = el('button', { class: 'pr-icon-btn', title: '結束練習' }, '✕');
 
   const refCanvas = el('canvas', { class: 'pr-canvas' });
@@ -103,7 +144,7 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     el(
       'div',
       { class: 'practice' },
-      el('header', { class: 'pr-header' }, el('div', { class: 'pr-title' }, stepNo, stepName, stepDesc), dots, el('div', { class: 'pr-tools' }, debugButton, exitButton)),
+      el('header', { class: 'pr-header' }, el('div', { class: 'pr-title' }, stepNo, stepName, stepDesc), dots, el('div', { class: 'pr-tools' }, voiceButton, debugButton, exitButton)),
       el(
         'section',
         { class: 'pr-panels' },
@@ -136,12 +177,18 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     refVideo.pause();
     refVideo.removeAttribute('src');
     window.removeEventListener('keydown', onKey);
+    speaker?.cancel();
   };
   const onKey = (e: KeyboardEvent) => {
     if (e.key === 'd' || e.key === 'D') debug.toggle();
   };
   window.addEventListener('keydown', onKey);
   debugButton.addEventListener('click', () => debug.toggle());
+  voiceButton.addEventListener('click', () => {
+    coach.setEnabled(!coach.enabled);
+    saveVoiceOn(coach.enabled);
+    voiceButton.textContent = coach.enabled ? '🔊' : '🔇';
+  });
   exitButton.addEventListener('click', () => {
     close();
     opts.onExit();
@@ -196,6 +243,8 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
 
   const finish = () => {
     close();
+    const score = scoreSession(session!.results, settings.scoring);
+    coach.announce(steps.length > 1 ? `全部練習完成，總分${score.total}分` : `練習完成，${score.total}分`, performance.now());
     opts.onFinish(session!);
   };
 
@@ -217,6 +266,9 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     loadReferenceVideo(i);
     stuckBox.hidden = true;
     stuckDismissedAt = -1;
+    prevReps = 0;
+    prevHeld = 0;
+    coach.stepStart(i + 1, steps.length, step.name, step.description, performance.now());
   };
 
   // ── 標準畫面的時間（循環播放這一步的示範片段） ──
@@ -249,6 +301,7 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
 
     if (event) {
       showToast(event.type === 'passed' ? `✓ ${event.result.name} 完成！` : `已跳過「${event.result.name}」`);
+      if (event.type === 'passed') coach.passed(t0);
       if (session.finished) return finish();
       enterStep(session.stepIndex);
       return;
@@ -368,6 +421,15 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     }
     feedback.className = cls;
     feedback.replaceChildren(...content);
+
+    // 語音（只念最需要修正的一項；規則見 feedback/voice.ts）
+    const now = performance.now();
+    if (!frame || !view.visible) coach.notVisible(now);
+    else coach.correction(corrections[0] ? spokenCorrection(corrections[0]) : '', now);
+    if (step.type === 'dynamic' && view.reps > prevReps) coach.rep(view.reps, now);
+    if (step.type === 'static' && view.heldMs > 0 && prevHeld === 0) coach.holdStart(now);
+    prevReps = view.reps;
+    prevHeld = view.heldMs;
 
     // 做不到時的出口
     if (view.stuck && stuckBox.hidden && stuckDismissedAt !== stepIndex) {

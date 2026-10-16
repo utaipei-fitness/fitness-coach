@@ -290,13 +290,64 @@ button.big {
   gap: 12px;
 }
 
-.home-steps li {
+/* 每個動作卡片都是按鈕：點了就單獨練習這個動作 */
+.home-step {
+  width: 100%;
+  height: 100%;
   display: flex;
   gap: 14px;
+  align-items: flex-start;
+  text-align: left;
   background: var(--card);
+  border: 2px solid transparent;
   border-radius: 16px;
   padding: 16px;
   box-shadow: 0 1px 6px rgba(15, 42, 46, 0.08);
+  font-size: 1rem;
+  line-height: 1.5;
+  position: relative;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.home-step:not(:disabled):hover,
+.home-step:not(:disabled):focus-visible {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.home-step-body {
+  flex: 1;
+  padding-bottom: 22px;
+}
+
+.home-step-go {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.home-section-title {
+  margin: 28px 0 0;
+  font-size: 1.3rem;
+}
+
+.home-section-title .muted {
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+
+/* 校徽：放在白色圓角底上，深色漸層背景上也清楚 */
+.home-logo {
+  float: right;
+  height: clamp(72px, 14vw, 120px);
+  background: #fff;
+  border-radius: 14px;
+  padding: 8px 10px;
+  margin: 0 0 8px 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .home-step-no {
@@ -379,6 +430,104 @@ button.big {
 
 .finish-stats span {
   color: var(--muted);
+}
+
+.finish-score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+  background: var(--card);
+  border-radius: 20px;
+  padding: 20px;
+  margin: 16px 0;
+  box-shadow: 0 1px 6px rgba(15, 42, 46, 0.08);
+}
+
+.finish-score > div {
+  flex: 1;
+  min-width: 260px;
+}
+
+.finish-ring.pr-ring {
+  position: relative;
+  top: auto;
+  right: auto;
+  width: 170px;
+  flex: none;
+}
+
+.finish .finish-ring circle {
+  fill: none;
+  stroke-width: 10;
+}
+
+.finish .finish-ring .track {
+  stroke: var(--accent-soft);
+}
+
+.finish .finish-ring .bar {
+  stroke: var(--accent);
+  stroke-linecap: round;
+}
+
+.finish-ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.finish-ring .pr-ring-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  padding-top: 30%;
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--fg);
+}
+
+.finish-ring .pr-ring-text small {
+  font-size: 0.4em;
+  margin-left: 2px;
+  color: var(--muted);
+}
+
+.finish-comment {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.finish .finish-stats {
+  grid-template-columns: repeat(4, 1fr);
+  margin: 8px 0;
+}
+
+.finish .finish-stats div {
+  box-shadow: none;
+  background: var(--bg);
+  padding: 10px;
+}
+
+.finish .finish-stats b {
+  font-size: clamp(1.4rem, 4vw, 2rem);
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.score-high {
+  color: var(--ok);
+}
+.score-mid {
+  color: #d97706;
+}
+.score-low {
+  color: var(--bad);
 }
 
 .finish table {

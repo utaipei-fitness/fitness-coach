@@ -55,6 +55,28 @@
     "referenceSpeed": 0.8   // 示範影片預設播放速度（1 = 原速）；練習時可在畫面上切換
   },
 
+  // ── 語音提示（瀏覽器內建語音，不需安裝軟體；練習畫面右上角 🔊 可開關）──
+  "voice": {
+    "enabled": true,        // 預設是否開啟語音
+    "rate": 1.0,            // 語速（0.5 = 慢、1 = 正常、1.5 = 快）
+    "correctionIntervalSec": 3, // 兩次修正提醒之間至少間隔幾秒
+    "repeatSameSec": 6,     // 同一句提醒至少隔幾秒才會再講
+    "minPersistMs": 800,    // 錯誤要持續多久（毫秒）才提醒，避免骨架抖一下就講話
+    "notVisibleIntervalSec": 6 // 「請退後一點，讓全身入鏡」至少間隔幾秒
+  },
+
+  // ── 評分（全部練習完後顯示）──
+  // 每一步的分數 = 完整度 × completionWeight + 精確度 × (1 − completionWeight)
+  //   完整度：做完多少（通過 = 100；跳過時依已維持的時間或已完成的次數）
+  //   精確度：角度和標準差多少。差距在「容許角度 × perfectWithin」以內 = 100 分，
+  //           剛好在容許邊界 = atToleranceScore 分，超過容許角度 2 倍 = 0 分（中間線性）
+  //   「跟做」的動作不判定角度，只算完整度
+  "scoring": {
+    "completionWeight": 0.5,
+    "perfectWithin": 0.5,
+    "atToleranceScore": 70
+  },
+
   // ── 熱量估算：kcal/分鐘 = MET × 3.5 × 體重(kg) ÷ 200 ──
   "energy": {
     "met": 3.8              // 徒手體操中等強度約 3.8（參考 Compendium of Physical Activities）

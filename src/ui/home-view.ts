@@ -1,6 +1,7 @@
 // 首頁：開始練習（鏡頭或影片檔）、步驟一覽、設定摘要。
 // （階段 4 會加入個人資料輸入）
 import type { AppConfig, ResolvedStep } from '../config/load';
+import { getMusic } from '../feedback/music';
 import { primeSpeech } from '../feedback/voice';
 import logoUrl from '../assets/utaipei-logo.png';
 import { configSummary } from './config-summary';
@@ -51,7 +52,8 @@ export function renderHome(root: HTMLElement, config: AppConfig, state: HomeStat
     status.replaceChildren(el('p', { class: 'muted' }, text));
   };
   startButton.addEventListener('click', () => {
-    primeSpeech(); // iPhone 要在點擊當下先發聲一次，之後才能自動念提示
+    primeSpeech();
+      getMusic()?.start(); // 背景配樂也要在點擊當下開始 // iPhone 要在點擊當下先發聲一次，之後才能自動念提示
     busy('開啟鏡頭中…（瀏覽器詢問時請按「允許」）');
     void actions.onPractice();
   });
@@ -64,6 +66,7 @@ export function renderHome(root: HTMLElement, config: AppConfig, state: HomeStat
     const file = fileInput.files?.[0];
     if (!file) return;
     primeSpeech();
+      getMusic()?.start(); // 背景配樂也要在點擊當下開始
     busy(`載入影片「${file.name}」中…`);
     void actions.onPracticeWithFile(file);
   });
@@ -86,6 +89,7 @@ export function renderHome(root: HTMLElement, config: AppConfig, state: HomeStat
     card.disabled = !ready;
     card.addEventListener('click', () => {
       primeSpeech();
+      getMusic()?.start(); // 背景配樂也要在點擊當下開始
       busy(`開啟鏡頭中…（單獨練習「${s.name}」）`);
       void actions.onPracticeStep(i);
     });

@@ -92,7 +92,8 @@ fitness_coach/
 │   │                       ——不依賴畫面程式碼，可單獨測試
 │   ├── feedback/
 │   │   ├── feedback.ts     最需要修正的 1～2 項、修正方向箭頭、使用者骨架對齊到標準骨架
-│   │   └── voice.ts        語音教練（瀏覽器內建語音）與防囉嗦規則
+│   │   ├── voice.ts        語音教練（瀏覽器內建語音）與防囉嗦規則
+│   │   └── music.ts        背景配樂（語音說話時自動調小聲）
 │   ├── report/
 │   │   └── score.ts        評分：完整度、精確度、總分與評語
 │   ├── assets/             圖片（臺北市立大學校徽）
@@ -148,6 +149,7 @@ config/*.json → 設定檢查（src/config）→ AppConfig ─┐
   - `mirrorMode: "sameSide"`（依口令同側）：直接用示範者的骨架。
   - 畫面上使用者自己的影像以自拍鏡像方式顯示（`selfieView`），只影響顯示，不影響計算。
 - **語音**：iPhone 規定第一次發聲要在使用者點擊的當下，所以首頁的開始按鈕會先呼叫 `primeSpeech()`。新增「開始練習」類的按鈕時記得也要呼叫。
+- **背景配樂**：`feedback/music.ts`，整個網頁共用一個播放器。和語音一樣要在點擊當下開始（`getMusic()?.start()`）；iPhone 不能直接改 `<audio>` 音量，所以用 Web Audio 的 GainNode 控制。
 - **評分**：引擎在 `StepResult` 記錄 `completion` 與 `accuracyRatios`（偏差 ÷ 原本容許角度），`report/score.ts` 依 `settings.json` 的 `scoring` 換算成分數。
 - **步驟類型**（`config/routine.json`）：`static` 靜態維持、`dynamic` 依序經過檢查點、`follow` 跟做（正面量不準角度的動作，人在畫面中做滿秒數即可，不判定角度）。
 - 正面拍攝時，往後蹲的後腳踝常被身體擋住（看不清楚 → 判定暫停）。這類動作只檢查看得清楚的關節；新增動作後，`reference-integration.test.ts` 會抓出這種問題。

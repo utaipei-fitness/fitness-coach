@@ -4,6 +4,7 @@ import { angleValue } from '../../angles/compute';
 import type { AppConfig, ResolvedStep } from '../../config/load';
 import { engineOptions, Session, type StepView } from '../../engine/step-engine';
 import { alignToReference, arrowSymbol, correctionArrow, topCorrections, type Arrow, type Correction } from '../../feedback/feedback';
+import { getMusic, saveMusicOn } from '../../feedback/music';
 import { browserSpeaker, VoiceCoach } from '../../feedback/voice';
 import { scoreSession } from '../../report/score';
 import { onVideoFrame, playVideo, type VideoSource } from '../../input/video-source';
@@ -80,7 +81,9 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
   const steps = opts.steps;
 
   // ── 語音教練 ──
-  const speaker = browserSpeaker(settings.voice.rate);
+  const music = getMusic();
+  // 語音說話時，背景配樂自動調小聲
+  const speaker = browserSpeaker(settings.voice.rate, (talking) => music?.setTalking(talking));
   const coach = new VoiceCoach(speaker ?? { speak: () => {}, cancel: () => {} }, {
     correctionIntervalMs: settings.voice.correctionIntervalSec * 1000,
     repeatSameMs: settings.voice.repeatSameSec * 1000,
@@ -102,6 +105,8 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
   const debugButton = el('button', { class: 'pr-icon-btn', title: '除錯面板（快捷鍵 D）' }, '🐞');
   const voiceButton = el('button', { class: 'pr-icon-btn', title: '語音提示開／關' }, coach.enabled ? '🔊' : '🔇');
   voiceButton.hidden = speaker === null;
+  const musicButton = el('button', { class: 'pr-icon-btn', title: '背景配樂開／關' }, music?.enabled ? '🎵' : '🔕');
+  musicButton.hidden = !music?.available;
   const exitButton = el('button', { class: 'pr-icon-btn', title: '結束練習' }, '✕');
 
   const refCanvas = el('canvas', { class: 'pr-canvas' });
@@ -144,7 +149,7 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     el(
       'div',
       { class: 'practice' },
-      el('header', { class: 'pr-header' }, el('div', { class: 'pr-title' }, stepNo, stepName, stepDesc), dots, el('div', { class: 'pr-tools' }, voiceButton, debugButton, exitButton)),
+      el('header', { class: 'pr-header' }, el('div', { class: 'pr-title' }, stepNo, stepName, stepDesc), dots, el('div', { class: 'pr-tools' }, musicButton, voiceButton, debugButton, exitButton)),
       el(
         'section',
         { class: 'pr-panels' },
@@ -178,12 +183,20 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     refVideo.removeAttribute('src');
     window.removeEventListener('keydown', onKey);
     speaker?.cancel();
+    music?.stop();
+    music?.setTalking(false);
   };
   const onKey = (e: KeyboardEvent) => {
     if (e.key === 'd' || e.key === 'D') debug.toggle();
   };
   window.addEventListener('keydown', onKey);
   debugButton.addEventListener('click', () => debug.toggle());
+  musicButton.addEventListener('click', () => {
+    if (!music) return;
+    music.setEnabled(!music.enabled);
+    saveMusicOn(music.enabled);
+    musicButton.textContent = music.enabled ? '🎵' : '🔕';
+  });
   voiceButton.addEventListener('click', () => {
     coach.setEnabled(!coach.enabled);
     saveVoiceOn(coach.enabled);

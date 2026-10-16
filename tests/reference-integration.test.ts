@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { angleValue } from '../src/angles/compute';
 import { loadBundledConfig } from '../src/config/bundled';
 import { engineOptions, Session } from '../src/engine/step-engine';
-import { computeTargets, decodeReference, staleClipSteps, type ReferenceFile } from '../src/reference/reference-data';
+import { computeTargets, decodeReference, musicUrl, staleClipSteps, type ReferenceFile } from '../src/reference/reference-data';
 
 const files = import.meta.glob<ReferenceFile>('/generated/reference-poses.json', { import: 'default', eager: true });
 const file = files['/generated/reference-poses.json'];
@@ -18,6 +18,10 @@ describe.skipIf(!file)('用示範者自己的動作跑判定（generated/referen
 
   it('示範片段（generated/clips）和 routine.json 的時間一致；不一致請執行 npm run clips', () => {
     expect(staleClipSteps(config.routine.steps, config.routine.reference.video)).toEqual([]);
+  });
+
+  it('背景配樂和 routine.json 的設定一致；不一致請執行 npm run clips', () => {
+    if (config.routine.reference.music) expect(musicUrl(config.routine.reference)).not.toBeNull();
   });
 
   it('每一步、每個檢查點都算得出目標角度', () => {

@@ -3,7 +3,8 @@ import './style.css';
 import { loadBundledConfig } from './config/bundled';
 import type { AppConfig } from './config/load';
 import { openCamera, openVideoFile, type VideoSource } from './input/video-source';
-import { computeTargets, decodeReference, loadReferenceFile, staleReason, type ReferenceData, type StepTargets } from './reference/reference-data';
+import { loadMusicOn, setupMusic } from './feedback/music';
+import { computeTargets, decodeReference, loadReferenceFile, musicUrl, staleReason, type ReferenceData, type StepTargets } from './reference/reference-data';
 import { renderConfigErrors } from './ui/config-error-view';
 import { renderHome } from './ui/home-view';
 import { showLiveView } from './ui/live-view';
@@ -29,6 +30,7 @@ async function main(): Promise<void> {
   if (!result.ok) return renderConfigErrors(root, result.errors);
   const config = result.config;
   const prepared = await prepareReference(config);
+  setupMusic(musicUrl(config.routine.reference), config.settings.music, loadMusicOn(config.settings.music.enabled));
 
   const goHome = (error?: string) =>
     renderHome(root, config, { notReady: prepared.ok ? null : prepared.reasons, error }, {

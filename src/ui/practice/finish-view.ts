@@ -2,6 +2,8 @@
 // （階段 5 會再加入熱量估算與歷史紀錄）
 import type { AppConfig } from '../../config/load';
 import type { Session, StepResult } from '../../engine/step-engine';
+import { getMusic } from '../../feedback/music';
+import { primeSpeech } from '../../feedback/voice';
 import { scoreComment, scoreSession } from '../../report/score';
 import { el } from '../dom';
 import { ProgressRing } from './ring';
@@ -39,7 +41,11 @@ export function renderFinish(root: HTMLElement, config: AppConfig, session: Sess
   const single = results.length === 1;
   const again = el('button', { class: 'primary' }, single ? '↻ 再練一次這個動作' : '↻ 再練一次');
   const home = el('button', {}, '回首頁');
-  again.addEventListener('click', actions.again);
+  again.addEventListener('click', () => {
+    primeSpeech();
+    getMusic()?.start();
+    actions.again();
+  });
   home.addEventListener('click', actions.home);
 
   const ring = new ProgressRing();

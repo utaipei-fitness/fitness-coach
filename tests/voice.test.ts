@@ -69,3 +69,13 @@ describe('語音教練', () => {
     expect(said.filter((x) => x.includes('入鏡'))).toHaveLength(2);
   });
 });
+
+describe('背景配樂音量', () => {
+  const s = { enabled: true, volume: 0.35, duckVolume: 0.1 };
+  it('平常用設定的音量，說話時降低，關閉時為 0', async () => {
+    const { musicVolume } = await import('../src/feedback/music');
+    expect(musicVolume(true, false, s)).toBe(0.35);
+    expect(musicVolume(true, true, s)).toBe(0.1);
+    expect(musicVolume(false, false, s)).toBe(0);
+  });
+});

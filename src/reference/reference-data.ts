@@ -137,10 +137,19 @@ export async function loadReferenceFile(): Promise<ReferenceFile | null> {
 export interface ClipIndex {
   video: string;
   clips: Record<string, { file: string; start: number; end: number }>;
+  /** 背景配樂（routine.json 的 reference.music） */
+  music?: { file: string; start: number; end: number };
 }
 
 const clipIndex = import.meta.glob<ClipIndex>('/generated/clips/index.json', { import: 'default', eager: true })['/generated/clips/index.json'];
-const clipUrls = import.meta.glob<string>('/generated/clips/*.mp4', { query: '?url', import: 'default', eager: true });
+const clipUrls = import.meta.glob<string>('/generated/clips/*.{mp4,m4a}', { query: '?url', import: 'default', eager: true });
+
+/** 背景配樂的網址；沒設定或和 routine.json 對不上時回傳 null（請執行 npm run clips） */
+export function musicUrl(reference: { video: string; music?: [number, number] }, index: ClipIndex | undefined = clipIndex): string | null {
+  const m = index?.music;
+  if (!reference.music || !index || !m || index.video !== reference.video || m.start !== reference.music[0] || m.end !== reference.music[1]) return null;
+  return clipUrls[`/generated/clips/${m.file}`] ?? null;
+}
 
 /**
  * 這一步的示範片段。片段要和目前的影片、clip 時間一致才使用（否則回傳 null，請重新執行 npm run clips）。

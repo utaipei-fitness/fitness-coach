@@ -36,6 +36,14 @@ try {
     });
     index.clips[step.id] = { file, start, end };
   }
+  if (routine.reference.music) {
+    const [start, end] = routine.reference.music;
+    console.log(`[clips] 背景配樂：${start}～${end} 秒 → generated/clips/music.m4a`);
+    execFileSync('avconvert', ['-s', source, '-p', 'PresetAppleM4A', '-o', join(outDir, 'music.m4a'), '--start', String(start), '--duration', String(end - start), '--replace'], {
+      stdio: 'ignore',
+    });
+    index.music = { file: 'music.m4a', start, end };
+  }
   await writeFile(join(outDir, 'index.json'), JSON.stringify(index, null, 2) + '\n');
   console.log('[clips] 完成');
 } catch (err) {

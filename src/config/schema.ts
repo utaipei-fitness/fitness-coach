@@ -79,6 +79,11 @@ export const settingsSchema = strict({
     minPersistMs: z.number().int().min(0),
     notVisibleIntervalSec: z.number().min(0),
   }),
+  music: strict({
+    enabled: z.boolean(),
+    volume: z.number().min(0).max(1),
+    duckVolume: z.number().min(0).max(1),
+  }),
   scoring: strict({
     completionWeight: z.number().min(0).max(1),
     perfectWithin: z.number().min(0).max(1),
@@ -193,6 +198,7 @@ export const routineSchema = strict({
     video: z.string().min(1),
     area: z.tuple([ratio, ratio]).refine(([a, b]) => b > a, { error: '格式為 [左邊界, 右邊界]，右邊界要比左邊界大（0 = 畫面最左、1 = 最右）' }),
     fps: z.number().positive().max(60),
+    music: timeRange.optional(),
   }),
   steps: z
     .array(stepSchema)

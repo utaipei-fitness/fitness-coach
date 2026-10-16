@@ -103,8 +103,11 @@ function pickVoice(): SpeechSynthesisVoice | undefined {
   );
 }
 
-/** 瀏覽器語音合成；不支援時回傳 null */
-export function browserSpeaker(rate: number): Speaker | null {
+/**
+ * 瀏覽器語音合成；不支援時回傳 null。
+ * onTalking(true/false)：開始／結束說話時通知（用來在說話時把配樂調小聲）
+ */
+export function browserSpeaker(rate: number, onTalking: (talking: boolean) => void = () => {}): Speaker | null {
   if (typeof speechSynthesis === 'undefined') return null;
   return {
     speak(text, interrupt) {
@@ -114,6 +117,8 @@ export function browserSpeaker(rate: number): Speaker | null {
       u.rate = rate;
       const v = pickVoice();
       if (v) u.voice = v;
+      u.onstart = () => onTalking(true);
+      u.onend = u.onerror = () => onTalking(speechSynthesis.speaking || speechSynthesis.pending);
       speechSynthesis.speak(u);
     },
     cancel() {

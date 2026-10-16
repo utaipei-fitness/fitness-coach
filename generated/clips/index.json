@@ -86,5 +86,10 @@
       "start": 224,
       "end": 228.6
     }
+  },
+  "music": {
+    "file": "music.m4a",
+    "start": 35,
+    "end": 228
   }
 }

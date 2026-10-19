@@ -58,7 +58,7 @@ export class VoiceCoach {
     this.pending = null;
     if (t - this.lastNotVisibleAt < this.opts.notVisibleIntervalMs || t < this.quietUntil) return;
     this.lastNotVisibleAt = t;
-    this.say('退後一點，全身入鏡', t);
+    this.say(NOT_VISIBLE_TEXT, t);
   }
 
   /** 每次更新畫面時呼叫；text 為目前最需要修正的提示（沒有就傳空字串） */
@@ -80,7 +80,10 @@ export class VoiceCoach {
 
 // ───────────── 瀏覽器語音 ─────────────
 
-export type VoiceGender = 'female' | 'male';
+import { cloudVoiceName, voiceClipUrl, type VoiceGender } from './voice-assets';
+import { NOT_VISIBLE_TEXT, PREVIEW_TEXT } from './voice-phrases';
+
+export type { VoiceGender };
 
 export interface SpeechStyle {
   /** 語速（1 = 正常） */
@@ -145,11 +148,16 @@ export function detectedVoices(): Promise<{ name: string; lang: string; local: b
   });
 }
 
-/** 等語音清單載入完（有些瀏覽器要等一下），回傳這台裝置有沒有女聲／男聲 */
+/**
+ * 等語音清單載入完（有些瀏覽器要等一下），回傳女聲／男聲各用哪個聲音（沒有為 null）。
+ * 有雲端音檔（npm run voices）的聲音一定可用，不受裝置影響。
+ */
 export function availableGenders(style: SpeechStyle): Promise<Record<VoiceGender, string | null>> {
-  if (typeof speechSynthesis === 'undefined') return Promise.resolve({ female: null, male: null });
-  const check = () => ({ female: findVoice(style.femaleVoices)?.name ?? null, male: findVoice(style.maleVoices)?.name ?? null });
-  if (zhVoices().length) return Promise.resolve(check());
+  const check = () => ({
+    female: cloudVoiceName('female') ?? (typeof speechSynthesis === 'undefined' ? null : (findVoice(style.femaleVoices)?.name ?? null)),
+    male: cloudVoiceName('male') ?? (typeof speechSynthesis === 'undefined' ? null : (findVoice(style.maleVoices)?.name ?? null)),
+  });
+  if (typeof speechSynthesis === 'undefined' || zhVoices().length) return Promise.resolve(check());
   return new Promise((resolve) => {
     const done = () => resolve(check());
     speechSynthesis.addEventListener('voiceschanged', done, { once: true });
@@ -180,38 +188,83 @@ function makeUtterance(text: string, style: SpeechStyle): SpeechSynthesisUtteran
   return u;
 }
 
+// 雲端音檔用同一個 <audio> 播放：iPhone 只要在點擊時「解鎖」過一次，之後就能自動播放
+let clipAudio: HTMLAudioElement | null = null;
+function getClipAudio(): HTMLAudioElement {
+  clipAudio ??= new Audio();
+  return clipAudio;
+}
+
 /**
- * 瀏覽器語音合成；不支援時回傳 null。
+ * 說話：有雲端音檔就播音檔，沒有就用裝置內建語音。不支援語音也沒有音檔時回傳 null。
  * onTalking(true/false)：開始／結束說話時通知（用來在說話時把配樂調小聲）
  */
 export function browserSpeaker(style: SpeechStyle, onTalking: (talking: boolean) => void = () => {}): Speaker | null {
-  if (typeof speechSynthesis === 'undefined') return null;
+  const hasTts = typeof speechSynthesis !== 'undefined';
+  const hasClips = cloudVoiceName('female') !== null || cloudVoiceName('male') !== null;
+  if (!hasTts && !hasClips) return null;
+  const queue: string[] = [];
+  let clipPlaying = false;
+
+  const playNext = (): void => {
+    const url = queue.shift();
+    if (!url) {
+      clipPlaying = false;
+      onTalking(false);
+      return;
+    }
+    const audio = getClipAudio();
+    clipPlaying = true;
+    onTalking(true);
+    audio.onended = audio.onerror = () => playNext();
+    audio.src = url;
+    void audio.play().catch(() => playNext());
+  };
+
   return {
     speak(text, interrupt) {
-      if (interrupt) speechSynthesis.cancel();
+      if (interrupt) this.cancel();
+      const url = voiceClipUrl(getChosenGender(style.defaultGender), text);
+      if (url) {
+        queue.push(url);
+        if (!clipPlaying) playNext();
+        return;
+      }
+      if (!hasTts) return;
       const u = makeUtterance(text, style);
       u.onstart = () => onTalking(true);
-      u.onend = u.onerror = () => onTalking(speechSynthesis.speaking || speechSynthesis.pending);
+      u.onend = u.onerror = () => onTalking(speechSynthesis.speaking || speechSynthesis.pending || clipPlaying);
       speechSynthesis.speak(u);
     },
     cancel() {
-      speechSynthesis.cancel();
+      queue.length = 0;
+      if (clipAudio) {
+        clipAudio.onended = clipAudio.onerror = null;
+        clipAudio.pause();
+      }
+      clipPlaying = false;
+      if (hasTts) speechSynthesis.cancel();
+      onTalking(false);
     },
   };
 }
 
-/** 試聽：用指定的語音念一句示範口令 */
-export function previewVoice(style: SpeechStyle, text = '兩側推。右手再抬高一點。'): void {
-  if (typeof speechSynthesis === 'undefined') return;
-  speechSynthesis.cancel();
-  speechSynthesis.speak(makeUtterance(text, style));
+/** 試聽：用目前選的聲音念一句示範提示 */
+export function previewVoice(style: SpeechStyle, text = PREVIEW_TEXT): void {
+  browserSpeaker(style)?.speak(text, true);
 }
 
 /**
  * iPhone 規定第一次發聲要在使用者「點擊」的當下。
- * 在「開始練習」等按鈕的點擊事件裡呼叫一次（不出聲），之後才能自動念提示。
+ * 在「開始練習」等按鈕的點擊事件裡呼叫一次（不出聲），之後才能自動念提示、播放語音音檔。
  */
 export function primeSpeech(): void {
+  const audio = getClipAudio();
+  audio.muted = true;
+  void audio.play().catch(() => {}).finally(() => {
+    audio.pause();
+    audio.muted = false;
+  });
   if (typeof speechSynthesis === 'undefined') return;
   const u = new SpeechSynthesisUtterance(' ');
   u.volume = 0;

@@ -67,6 +67,13 @@
     // 女聲、男聲各自的候選語音（依序找這台裝置上有的；不同手機、電腦內建的語音不同）
     "femaleVoices": ["HsiaoChen Online", "HsiaoYu Online", "Google 國語（臺灣）", "美佳", "Mei-Jia", "Meijia", "Sandy", "Shelley", "Flo", "Hanhan", "Yating"],
     "maleVoices": ["YunJhe Online", "Zhiwei", "Reed", "Eddy", "Rocko", "Grandpa"],
+    // 雲端語音（Microsoft Azure）：執行 npm run voices 會用這兩個聲音把所有句子做成音檔，
+    // 網站優先播放這些音檔（每台裝置聲音一致），沒有音檔的句子才用上面的裝置內建語音
+    "cloud": {
+      "female": "zh-TW-HsiaoChenNeural", // 女聲（台灣中文）
+      "male": "zh-TW-YunJheNeural",      // 男聲（台灣中文）
+      "rate": "+5%"                      // 語速：+5% = 稍快一點，"0%" = 正常
+    },
     "correctionIntervalSec": 5, // 兩次修正提醒之間至少間隔幾秒
     "repeatSameSec": 10,    // 同一句提醒至少隔幾秒才會再講
     "minPersistMs": 1500,   // 錯誤要持續多久（毫秒）才提醒，避免一直講話

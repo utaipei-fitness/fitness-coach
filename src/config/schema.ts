@@ -84,6 +84,11 @@ export const settingsSchema = strict({
     defaultGender: z.enum(['female', 'male']),
     femaleVoices: z.array(z.string()),
     maleVoices: z.array(z.string()),
+    cloud: strict({
+      female: z.string().min(1),
+      male: z.string().min(1),
+      rate: z.string().regex(/^[+-]?\d+%$/, { error: '格式像 "+5%"、"0%"、"-10%"' }),
+    }),
     correctionIntervalSec: z.number().min(0),
     repeatSameSec: z.number().min(0),
     minPersistMs: z.number().int().min(0),

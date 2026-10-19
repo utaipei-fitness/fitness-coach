@@ -6,6 +6,7 @@ import { engineOptions, Session, type StepView } from '../../engine/step-engine'
 import { alignToReference, arrowSymbol, correctionArrow, topCorrections, type Arrow, type Correction } from '../../feedback/feedback';
 import { getMusic, saveMusicOn } from '../../feedback/music';
 import { browserSpeaker, VoiceCoach } from '../../feedback/voice';
+import { correctionText } from '../../feedback/voice-phrases';
 import { onVideoFrame, playVideo, type VideoSource } from '../../input/video-source';
 import { getEstimator, PosePipeline } from '../../pose/pipeline';
 import type { PoseFrame } from '../../pose/types';
@@ -69,9 +70,9 @@ function saveVoiceOn(on: boolean): void {
   }
 }
 
-/** 語音念的修正提示：優先用設定檔的提示文字 */
+/** 語音念的修正提示：優先用設定檔的提示文字（句子定義在 feedback/voice-phrases.ts） */
 function spokenCorrection(c: Correction): string {
-  return c.hint || `注意${c.name}`;
+  return correctionText(c.hint, c.name);
 }
 
 export function showPractice(root: HTMLElement, opts: PracticeOptions): void {

@@ -17,7 +17,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
     "check": "npm run typecheck && vitest run",
-    "clips": "node scripts/export-clips.mjs"
+    "clips": "node scripts/export-clips.mjs",
+    "voices": "node scripts/generate-voices.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.1.0",

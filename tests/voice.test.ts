@@ -1,8 +1,9 @@
-// 語音教練的測試：確認「不會一直講話」的規則
+// 語音教練的測試：只講重點、口令式、不會一直講話
 import { describe, expect, it } from 'vitest';
-import { VoiceCoach, type Speaker } from '../src/feedback/voice';
+import { musicVolume } from '../src/feedback/music';
+import { asCommand, VoiceCoach, type Speaker } from '../src/feedback/voice';
 
-const opts = { correctionIntervalMs: 3000, repeatSameMs: 6000, minPersistMs: 800, notVisibleIntervalMs: 6000 };
+const opts = { correctionIntervalMs: 5000, repeatSameMs: 10000, minPersistMs: 1500, notVisibleIntervalMs: 10000 };
 
 function setup() {
   const said: string[] = [];
@@ -16,64 +17,75 @@ function hold(coach: VoiceCoach, text: string, from: number, ms: number) {
 }
 
 describe('語音教練', () => {
-  it('錯誤要持續 0.8 秒才提醒', () => {
+  it('進入新的一步只喊動作名稱（口令式）', () => {
     const { said, coach } = setup();
-    hold(coach, '右手再抬高', 0, 500);
+    coach.stepStart('深蹲', 0);
+    expect(said).toEqual(['深蹲！']);
+  });
+
+  it('口令化：結尾加驚嘆號，句號換成驚嘆號', () => {
+    expect(asCommand('右手再抬高')).toBe('右手再抬高！');
+    expect(asCommand('右手再抬高。')).toBe('右手再抬高！');
+    expect(asCommand('準備好了嗎？')).toBe('準備好了嗎？');
+  });
+
+  it('錯誤要持續 1.5 秒才提醒', () => {
+    const { said, coach } = setup();
+    hold(coach, '右手再抬高', 0, 1300);
     expect(said).toEqual([]);
-    hold(coach, '右手再抬高', 600, 300);
-    expect(said).toEqual(['右手再抬高']);
+    hold(coach, '右手再抬高', 1400, 200);
+    expect(said).toEqual(['右手再抬高！']);
   });
 
-  it('同一句話 6 秒內不重複', () => {
+  it('同一句話 10 秒內不重複', () => {
     const { said, coach } = setup();
-    hold(coach, '右手再抬高', 0, 6700); // 第一次在 0.8 秒講出，6.8 秒前不會再講
-    expect(said).toEqual(['右手再抬高']);
-    hold(coach, '右手再抬高', 6800, 100);
-    expect(said).toEqual(['右手再抬高', '右手再抬高']);
+    hold(coach, '右手再抬高', 0, 11400); // 第一次在 1.5 秒講出，11.5 秒前不會再講
+    expect(said).toEqual(['右手再抬高！']);
+    hold(coach, '右手再抬高', 11500, 100);
+    expect(said).toEqual(['右手再抬高！', '右手再抬高！']);
   });
 
-  it('兩次提醒至少間隔 3 秒', () => {
+  it('兩次提醒至少間隔 5 秒', () => {
     const { said, coach } = setup();
-    hold(coach, '右手再抬高', 0, 900);
-    hold(coach, '左手再抬高', 1000, 2700); // 第一次在 0.8 秒講出，3.8 秒前不會講下一句
-    expect(said).toEqual(['右手再抬高']);
-    hold(coach, '左手再抬高', 3800, 100);
-    expect(said).toEqual(['右手再抬高', '左手再抬高']);
+    hold(coach, '右手再抬高', 0, 1500);
+    hold(coach, '左手再抬高', 1600, 4800); // 第一次在 1.5 秒講出，6.5 秒前不會講下一句
+    expect(said).toEqual(['右手再抬高！']);
+    hold(coach, '左手再抬高', 6500, 100);
+    expect(said).toEqual(['右手再抬高！', '左手再抬高！']);
   });
 
   it('動作做對了（沒有提示）就不講話', () => {
     const { said, coach } = setup();
-    hold(coach, '', 0, 5000);
+    hold(coach, '', 0, 20000);
     expect(said).toEqual([]);
   });
 
-  it('念步驟名稱的時候不插入修正提醒', () => {
+  it('念動作名稱的時候不插入修正提醒', () => {
     const { said, coach } = setup();
-    coach.stepStart(2, 17, '原地踏步', '原地踏步，手臂自然前後擺動', 0);
-    hold(coach, '右手再抬高', 0, 2000);
+    coach.stepStart('側蹲＋後跨步（左）', 0);
+    hold(coach, '右手再抬高', 0, 2200); // 名稱 9 個字，約 2.25 秒講完
     expect(said).toHaveLength(1);
   });
 
   it('關掉語音就完全不講話', () => {
     const { said, coach } = setup();
     coach.setEnabled(false);
-    coach.passed(0);
+    coach.stepStart('深蹲', 0);
     coach.notVisible(0);
     hold(coach, '右手再抬高', 0, 5000);
     expect(said).toEqual([]);
   });
 
-  it('「請讓全身入鏡」每 6 秒最多一次', () => {
+  it('「退後一點，全身入鏡」每 10 秒最多一次', () => {
     const { said, coach } = setup();
-    for (let t = 0; t <= 7000; t += 100) coach.notVisible(t);
-    expect(said.filter((x) => x.includes('入鏡'))).toHaveLength(2);
+    for (let t = 0; t <= 15000; t += 100) coach.notVisible(t);
+    expect(said).toEqual(['退後一點，全身入鏡！', '退後一點，全身入鏡！']);
   });
 });
 
 describe('背景配樂音量', () => {
   const s = { enabled: true, volume: 0.35, duckVolume: 0.1 };
-  it('平常用設定的音量，說話時降低，關閉時為 0', async () => {
-    const { musicVolume } = await import('../src/feedback/music');
+  it('平常用設定的音量，說話時降低，關閉時為 0', () => {
     expect(musicVolume(true, false, s)).toBe(0.35);
     expect(musicVolume(true, true, s)).toBe(0.1);
     expect(musicVolume(false, false, s)).toBe(0);

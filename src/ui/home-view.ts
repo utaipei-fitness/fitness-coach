@@ -2,7 +2,7 @@
 // （階段 4 會加入個人資料輸入）
 import type { AppConfig, ResolvedStep } from '../config/load';
 import { getMusic } from '../feedback/music';
-import { primeSpeech } from '../feedback/voice';
+import { chineseVoices, getChosenVoiceName, previewVoice, primeSpeech, setChosenVoiceName } from '../feedback/voice';
 import logoUrl from '../assets/utaipei-logo.png';
 import { configSummary } from './config-summary';
 import { el } from './dom';
@@ -71,6 +71,29 @@ export function renderHome(root: HTMLElement, config: AppConfig, state: HomeStat
     void actions.onPracticeWithFile(file);
   });
 
+  // 教練聲音：列出這台裝置上的中文語音，可以試聽並選擇（記在這台裝置上）
+  const voiceSelect = el('select', { class: 'voice-select', 'aria-label': '教練聲音' });
+  const previewButton = el('button', { class: 'voice-preview' }, '▶ 試聽');
+  const voiceRow = el('div', { class: 'voice-row', hidden: '' }, el('span', {}, '🔊 教練聲音'), voiceSelect, previewButton);
+  void chineseVoices().then((voices) => {
+    if (voices.length === 0) return;
+    const chosen = getChosenVoiceName();
+    voiceSelect.replaceChildren(
+      el('option', { value: '' }, '自動選擇'),
+      ...voices.map((v) => {
+        const o = el('option', { value: v.name }, `${v.name}（${v.lang}）`);
+        if (v.name === chosen) o.selected = true;
+        return o;
+      }),
+    );
+    voiceRow.hidden = false;
+  });
+  voiceSelect.addEventListener('change', () => {
+    setChosenVoiceName(voiceSelect.value || null);
+    previewVoice(config.settings.voice);
+  });
+  previewButton.addEventListener('click', () => previewVoice(config.settings.voice));
+
   const steps = config.routine.steps;
   const stepCards = steps.map((s, i) => {
     const card = el(
@@ -107,6 +130,7 @@ export function renderHome(root: HTMLElement, config: AppConfig, state: HomeStat
         el('h1', {}, config.routine.name),
         el('p', { class: 'home-sub' }, `共 ${steps.length} 個動作・做對了才進下一步`),
         el('div', { class: 'actions' }, startButton, fileButton, fileInput),
+        voiceRow,
         status,
       ),
       el('h2', { class: 'home-section-title' }, '動作列表', el('span', { class: 'muted' }, '　點任一動作可以單獨練習')),

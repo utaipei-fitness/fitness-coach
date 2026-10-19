@@ -36,7 +36,7 @@ const seconds = z.number().min(0);
 export const settingsSchema = strict({
   judge: strict({
     toleranceDeg: degrees,
-    extraToleranceDeg: z.number().min(0).max(90),
+    extraToleranceDeg: z.number().min(-30).max(90),
     hysteresisDeg: z.number().min(0).max(90),
     holdGraceMs: z.number().int().min(0).max(5000),
     checkpointWindowMs: z.number().int().min(0).max(5000),
@@ -74,6 +74,8 @@ export const settingsSchema = strict({
   voice: strict({
     enabled: z.boolean(),
     rate: z.number().min(0.5).max(2),
+    pitch: z.number().min(0.5).max(2),
+    preferredVoices: z.array(z.string()),
     correctionIntervalSec: z.number().min(0),
     repeatSameSec: z.number().min(0),
     minPersistMs: z.number().int().min(0),
@@ -85,9 +87,9 @@ export const settingsSchema = strict({
     duckVolume: z.number().min(0).max(1),
   }),
   scoring: strict({
-    completionWeight: z.number().min(0).max(1),
     perfectWithin: z.number().min(0).max(1),
     atToleranceScore: z.number().min(0).max(100),
+    needsWorkBelow: z.number().min(0).max(100),
   }),
   energy: strict({
     met: z.number().positive().max(25),

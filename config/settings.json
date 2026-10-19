@@ -8,7 +8,7 @@
   // ── 判定標準 ──
   "judge": {
     "toleranceDeg": 20,     // 預設容許角度：與標準相差 ±20 度以內算達標
-    "extraToleranceDeg": 0,   // 整體放寬：所有角度（包括 routine.json 個別設定的）都再多容許這麼多度；0 = 不放寬
+    "extraToleranceDeg": -5,  // 整體調整：所有角度（包括 routine.json 個別設定的）的容許範圍都加上這個度數；負數 = 更嚴格、0 = 不調整
     "hysteresisDeg": 8,     // 防閃爍緩衝：進入範圍要 ≤ 容許角度，離開範圍要超過「容許角度 + 8」才算
     "holdGraceMs": 300,     // 靜態寬限：維持途中短暫跑出範圍不到 0.3 秒，不會中斷計時
     "checkpointWindowMs": 500, // 動態寬限：每個角度在 0.5 秒內各自到位過，就算到達檢查點（不必同一瞬間）
@@ -56,13 +56,16 @@
   },
 
   // ── 語音提示（瀏覽器內建語音，不需安裝軟體；練習畫面右上角 🔊 可開關）──
+  // 風格：像教練喊口令，只講「動作名稱」與「最需要修正的一項」，不講「很好／完成」、報數等
   "voice": {
     "enabled": true,        // 預設是否開啟語音
-    "rate": 1.0,            // 語速（0.5 = 慢、1 = 正常、1.5 = 快）
-    "correctionIntervalSec": 3, // 兩次修正提醒之間至少間隔幾秒
-    "repeatSameSec": 6,     // 同一句提醒至少隔幾秒才會再講
-    "minPersistMs": 800,    // 錯誤要持續多久（毫秒）才提醒，避免骨架抖一下就講話
-    "notVisibleIntervalSec": 6 // 「請退後一點，讓全身入鏡」至少間隔幾秒
+    "rate": 1.15,           // 語速（1 = 正常；稍快比較有活力）
+    "pitch": 1.15,          // 音調（1 = 正常；稍高比較有精神）
+    "preferredVoices": ["美佳", "Mei-Jia", "Eddy", "Flo"], // 偏好的語音（依序找裝置上有的）；首頁也可以自己選並試聽
+    "correctionIntervalSec": 5, // 兩次修正提醒之間至少間隔幾秒
+    "repeatSameSec": 10,    // 同一句提醒至少隔幾秒才會再講
+    "minPersistMs": 1500,   // 錯誤要持續多久（毫秒）才提醒，避免一直講話
+    "notVisibleIntervalSec": 10 // 「退後一點，全身入鏡」至少間隔幾秒
   },
 
   // ── 背景配樂（來自標準影片；練習畫面右上角 🎵 可開關）──
@@ -73,15 +76,14 @@
   },
 
   // ── 評分（全部練習完後顯示）──
-  // 每一步的分數 = 完整度 × completionWeight + 精確度 × (1 − completionWeight)
-  //   完整度：做完多少（通過 = 100；跳過時依已維持的時間或已完成的次數）
-  //   精確度：角度和標準差多少。差距在「容許角度 × perfectWithin」以內 = 100 分，
-  //           剛好在容許邊界 = atToleranceScore 分，超過容許角度 2 倍 = 0 分（中間線性）
-  //   「跟做」的動作不判定角度，只算完整度
+  // 整體分數 = 各動作「精確度」的平均（角度和標準動作的接近程度）；跳過的動作算 0 分
+  //   差距在「容許角度 × perfectWithin」以內 = 100 分，剛好在容許邊界 = atToleranceScore 分，
+  //   超過容許角度 2 倍 = 0 分（中間線性）。「跟做」的動作不判定角度，不列入分數
+  // 報告：跳過的動作列為「未完成」；精確度低於 needsWorkBelow 的列為「需要修正」
   "scoring": {
-    "completionWeight": 0.5,
     "perfectWithin": 0.5,
-    "atToleranceScore": 70
+    "atToleranceScore": 70,
+    "needsWorkBelow": 80
   },
 
   // ── 熱量估算：kcal/分鐘 = MET × 3.5 × 體重(kg) ÷ 200 ──

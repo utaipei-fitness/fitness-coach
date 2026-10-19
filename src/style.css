@@ -534,3 +534,83 @@ button.big {
   background: var(--card);
   border-radius: 12px;
 }
+
+/* 結果頁：極簡報告 */
+.finish-label {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.finish-report {
+  display: grid;
+  gap: 12px;
+}
+
+.finish-block {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 14px 18px;
+  box-shadow: 0 1px 6px rgba(15, 42, 46, 0.08);
+}
+
+.finish-block h2 {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+}
+
+.finish-block p,
+.finish-block ul {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.finish-block ul {
+  padding-left: 1.2em;
+}
+
+.finish-ok {
+  color: var(--ok);
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+.finish-details {
+  margin: 16px 0;
+  color: var(--muted);
+}
+
+.finish-details summary {
+  cursor: pointer;
+}
+
+/* 首頁：教練聲音選擇 */
+.voice-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.voice-row[hidden] {
+  display: none;
+}
+
+.voice-select {
+  font: inherit;
+  font-weight: 400;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 0;
+  max-width: 100%;
+  color: var(--fg);
+}
+
+.home-hero .voice-preview {
+  font-size: 1rem;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}

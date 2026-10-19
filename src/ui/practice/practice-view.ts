@@ -6,7 +6,6 @@ import { engineOptions, Session, type StepView } from '../../engine/step-engine'
 import { alignToReference, arrowSymbol, correctionArrow, topCorrections, type Arrow, type Correction } from '../../feedback/feedback';
 import { getMusic, saveMusicOn } from '../../feedback/music';
 import { browserSpeaker, VoiceCoach } from '../../feedback/voice';
-import { scoreSession } from '../../report/score';
 import { onVideoFrame, playVideo, type VideoSource } from '../../input/video-source';
 import { getEstimator, PosePipeline } from '../../pose/pipeline';
 import type { PoseFrame } from '../../pose/types';
@@ -83,7 +82,7 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
   // ── 語音教練 ──
   const music = getMusic();
   // 語音說話時，背景配樂自動調小聲
-  const speaker = browserSpeaker(settings.voice.rate, (talking) => music?.setTalking(talking));
+  const speaker = browserSpeaker(settings.voice, (talking) => music?.setTalking(talking));
   const coach = new VoiceCoach(speaker ?? { speak: () => {}, cancel: () => {} }, {
     correctionIntervalMs: settings.voice.correctionIntervalSec * 1000,
     repeatSameMs: settings.voice.repeatSameSec * 1000,
@@ -91,8 +90,7 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     notVisibleIntervalMs: settings.voice.notVisibleIntervalSec * 1000,
   });
   coach.setEnabled(speaker !== null && loadVoiceOn(settings.voice.enabled));
-  let prevReps = 0;
-  let prevHeld = 0;
+
   const mirror = settings.display.mirrorMode === 'mirror';
   const selfie = source.kind === 'camera' && settings.display.selfieView;
   const minVis = settings.judge.minVisibility;
@@ -256,8 +254,6 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
 
   const finish = () => {
     close();
-    const score = scoreSession(session!.results, settings.scoring);
-    coach.announce(steps.length > 1 ? `全部練習完成，總分${score.total}分` : `練習完成，${score.total}分`, performance.now());
     opts.onFinish(session!);
   };
 
@@ -279,9 +275,7 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     loadReferenceVideo(i);
     stuckBox.hidden = true;
     stuckDismissedAt = -1;
-    prevReps = 0;
-    prevHeld = 0;
-    coach.stepStart(i + 1, steps.length, step.name, step.description, performance.now());
+    coach.stepStart(step.name, performance.now());
   };
 
   // ── 標準畫面的時間（循環播放這一步的示範片段） ──
@@ -314,7 +308,6 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
 
     if (event) {
       showToast(event.type === 'passed' ? `✓ ${event.result.name} 完成！` : `已跳過「${event.result.name}」`);
-      if (event.type === 'passed') coach.passed(t0);
       if (session.finished) return finish();
       enterStep(session.stepIndex);
       return;
@@ -439,10 +432,6 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     const now = performance.now();
     if (!frame || !view.visible) coach.notVisible(now);
     else coach.correction(corrections[0] ? spokenCorrection(corrections[0]) : '', now);
-    if (step.type === 'dynamic' && view.reps > prevReps) coach.rep(view.reps, now);
-    if (step.type === 'static' && view.heldMs > 0 && prevHeld === 0) coach.holdStart(now);
-    prevReps = view.reps;
-    prevHeld = view.heldMs;
 
     // 做不到時的出口
     if (view.stuck && stuckBox.hidden && stuckDismissedAt !== stepIndex) {

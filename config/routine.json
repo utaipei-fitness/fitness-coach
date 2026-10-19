@@ -24,6 +24,7 @@
 //
 // 可省略的欄位（不寫就用 settings.json 的預設值）：
 //   holdMs（靜態維持毫秒）、reps（動態次數）、timeoutSec、maxAttempts
+//   toleranceAdjustDeg 這一步所有角度的容許範圍再加減幾度（正數 = 放寬）
 //   enabled: false 可暫時停用這一步（不用刪掉）
 //
 // 時間點怎麼找：npm run dev 後開 http://localhost:5173/tools/reference.html
@@ -175,6 +176,7 @@
     },
     {
       "id": "back-lunge-left",
+      "toleranceAdjustDeg": 10, // 這一步整體放寬 10 度
       "name": "後腳向下蹲（左）",
       "description": "一腳往後退一步，膝蓋往下蹲，再站回來",
       "type": "dynamic",
@@ -192,6 +194,7 @@
     },
     {
       "id": "back-lunge-right",
+      "toleranceAdjustDeg": 10, // 這一步整體放寬 10 度
       "name": "後腳向下蹲（右）",
       "description": "換另一腳往後退一步，膝蓋往下蹲，再站回來",
       "type": "dynamic",
@@ -208,6 +211,7 @@
     },
     {
       "id": "side-back-left",
+      "toleranceAdjustDeg": 10, // 這一步整體放寬 10 度
       "name": "側蹲＋後跨步（左）",
       "description": "向左側蹲 → 站回 → 向後踩 → 站回",
       "type": "dynamic",
@@ -227,6 +231,7 @@
     },
     {
       "id": "side-back-right",
+      "toleranceAdjustDeg": 10, // 這一步整體放寬 10 度
       "name": "側蹲＋後跨步（右）",
       "description": "向右側蹲 → 站回 → 向後踩 → 站回",
       "type": "dynamic",

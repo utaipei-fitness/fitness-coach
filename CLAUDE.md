@@ -151,7 +151,7 @@ config/*.json → 設定檢查（src/config）→ AppConfig ─┐
 - **語音**：iPhone 規定第一次發聲要在使用者點擊的當下，所以首頁的開始按鈕會先呼叫 `primeSpeech()`。新增「開始練習」類的按鈕時記得也要呼叫。
 - **背景配樂**：`feedback/music.ts`，整個網頁共用一個播放器。和語音一樣要在點擊當下開始（`getMusic()?.start()`）；iPhone 不能直接改 `<audio>` 音量，所以用 Web Audio 的 GainNode 控制。
 - **評分**：引擎在 `StepResult` 記錄 `accuracyRatios`（偏差 ÷ 原本容許角度），`report/score.ts` 換算成精確度並產生極簡報告（未完成／需要修正）；整體分數中跳過的動作算 0 分。使用者不要「完整度」。
-- **語音風格**：使用者要「健身教練口令、有活力、只講重點」，不要「很好／完成」等多餘的話。
+- **語音風格**：使用者要「自然、有活力、只講重點」（刻意的口令腔不要），提供女聲／男聲；不要「很好／完成」等多餘的話。
 - **步驟類型**（`config/routine.json`）：`static` 靜態維持、`dynamic` 依序經過檢查點、`follow` 跟做（正面量不準角度的動作，人在畫面中做滿秒數即可，不判定角度）。
 - 正面拍攝時，往後蹲的後腳踝常被身體擋住（看不清楚 → 判定暫停）。這類動作只檢查看得清楚的關節；新增動作後，`reference-integration.test.ts` 會抓出這種問題。
 - **角度類型**（`config/angles.json`）：
@@ -221,6 +221,8 @@ config/*.json → 設定檢查（src/config）→ AppConfig ─┐
 5. 執行 `npm run check`：`reference-integration.test.ts` 會用示範者自己的動作檢查這一步能不能通過，過不了代表時間點或容許角度要調。
 
 ### 調整容許範圍
+
+容許角度 = 個別或預設值 ＋ `extraToleranceDeg`（整體）＋ `groupAdjustDeg`（依部位）＋ 步驟的 `toleranceAdjustDeg`，最少 3 度。
 
 - **全部一起放寬或收緊（最簡單）**：改 `config/settings.json` 的 `judge.extraToleranceDeg`，所有角度（包括個別設定的）都會加上這個度數。
 - **改預設容許角度**：`judge.toleranceDeg`（只影響沒有個別設定 tolerance 的角度）。

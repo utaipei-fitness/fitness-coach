@@ -229,8 +229,14 @@ function resolve(settings: Settings, anglesFile: AnglesFile, routine: Routine): 
         angles: Object.entries(s.angles).map(([id, rule]) => ({
           id,
           def: anglesFile.angles[id]!,
-          // 整體調整後至少保留 3 度，避免設成負數造成永遠做不到
-          tolerance: Math.max(3, (rule.tolerance ?? settings.judge.toleranceDeg) + settings.judge.extraToleranceDeg),
+          // 容許角度 = 個別（或預設）＋整體調整＋部位調整＋這一步的調整；至少保留 3 度，避免永遠做不到
+          tolerance: Math.max(
+            3,
+            (rule.tolerance ?? settings.judge.toleranceDeg) +
+              settings.judge.extraToleranceDeg +
+              settings.judge.groupAdjustDeg[anglesFile.angles[id]!.group] +
+              (s.toleranceAdjustDeg ?? 0),
+          ),
           hintLow: rule.hintLow,
           hintHigh: rule.hintHigh,
         })),

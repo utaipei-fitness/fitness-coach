@@ -6,7 +6,7 @@ import type { AngleCheck } from '../src/engine/step-engine';
 import { alignToReference, arrowSymbol, correctionArrow, topCorrections } from '../src/feedback/feedback';
 import { makeFrame } from './helpers';
 
-const raise: AngleDef = { name: '右上臂抬舉', side: 'right', type: 'joint', points: ['rightHip', 'rightShoulder', 'rightElbow'] };
+const raise: AngleDef = { name: '右上臂抬舉', group: 'upper', side: 'right', type: 'joint', points: ['rightHip', 'rightShoulder', 'rightElbow'] };
 
 function check(id: string, diff: number | null, tolerance = 10, inRange = false): AngleCheck {
   return { id, name: id, value: diff === null ? null : 90 + diff, target: 90, diff, tolerance, inRange, hintLow: `${id}低`, hintHigh: `${id}高` };

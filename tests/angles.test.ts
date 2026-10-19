@@ -4,8 +4,8 @@ import { angleDiff, angleValue, mirrorFrame } from '../src/angles/compute';
 import type { AngleDef } from '../src/config/schema';
 import { makeFrame } from './helpers';
 
-const rightElbow: AngleDef = { name: '右手肘', side: 'right', type: 'joint', points: ['rightShoulder', 'rightElbow', 'rightWrist'] };
-const trunkTilt: AngleDef = { name: '軀幹側彎', side: 'center', type: 'segment', points: ['midHip', 'midShoulder'] };
+const rightElbow: AngleDef = { name: '右手肘', group: 'upper', side: 'right', type: 'joint', points: ['rightShoulder', 'rightElbow', 'rightWrist'] };
+const trunkTilt: AngleDef = { name: '軀幹側彎', group: 'trunk', side: 'center', type: 'segment', points: ['midHip', 'midShoulder'] };
 
 describe('三點夾角 joint', () => {
   it('手臂打直 = 180 度，彎成直角 = 90 度', () => {

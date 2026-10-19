@@ -1,5 +1,5 @@
 // 語音教練：用瀏覽器內建的語音合成（Web Speech API）念出提示，不需要外部軟體。
-// 風格：像健身教練喊口令——短、有力，只講重點。
+// 風格：自然、有活力，只講重點。可選女聲或男聲。
 //   會講：步驟名稱、最需要修正的一項、「退後一點，全身入鏡」
 //   不講：「很好／完成」、報數、念總分等多餘的話
 // 規則重點是「不要一直講話」：錯誤要持續一下才提醒、提醒之間有間隔、同一句話不連續重複。
@@ -22,13 +22,6 @@ export interface VoiceOptions {
   notVisibleIntervalMs: number;
 }
 
-/** 口令化：結尾加上驚嘆號，讓語音念起來比較有力 */
-export function asCommand(text: string): string {
-  const t = text.trim();
-  if (!t) return t;
-  return /[！!？?。.]$/.test(t) ? t.replace(/[。.]$/, '！') : `${t}！`;
-}
-
 export class VoiceCoach {
   enabled = true;
   private quietUntil = 0;
@@ -44,7 +37,7 @@ export class VoiceCoach {
 
   private say(text: string, t: number, interrupt = false): void {
     if (!this.enabled || !text) return;
-    this.speaker.speak(asCommand(text), interrupt);
+    this.speaker.speak(text, interrupt);
     this.lastSpoken.set(text, t);
     // 粗估講完需要的時間（中文約每字 0.25 秒），講話時不插入修正提醒
     this.quietUntil = Math.max(this.quietUntil, t + text.length * 250);
@@ -87,61 +80,74 @@ export class VoiceCoach {
 
 // ───────────── 瀏覽器語音 ─────────────
 
+export type VoiceGender = 'female' | 'male';
+
 export interface SpeechStyle {
   /** 語速（1 = 正常） */
   rate: number;
-  /** 音調（1 = 正常，大於 1 比較高亢有活力） */
+  /** 音調（1 = 正常） */
   pitch: number;
-  /** 偏好的語音名稱（依序找第一個這台裝置有的），例如 ["美佳", "Eddy"] */
-  preferredVoices: string[];
+  defaultGender: VoiceGender;
+  /** 女聲／男聲的候選語音名稱（依序找這台裝置上有的，名稱包含即可） */
+  femaleVoices: string[];
+  maleVoices: string[];
 }
 
-const VOICE_NAME_KEY = 'fitness-coach.voice-name';
+const GENDER_KEY = 'fitness-coach.voice-gender';
 
-/** 使用者在首頁選的語音（記在這台裝置上） */
-export function getChosenVoiceName(): string | null {
+/** 使用者在首頁選的聲音（女聲／男聲），記在這台裝置上 */
+export function getChosenGender(fallback: VoiceGender): VoiceGender {
   try {
-    return localStorage.getItem(VOICE_NAME_KEY);
+    const v = localStorage.getItem(GENDER_KEY);
+    return v === 'male' || v === 'female' ? v : fallback;
   } catch {
-    return null;
+    return fallback;
   }
 }
 
-export function setChosenVoiceName(name: string | null): void {
+export function setChosenGender(g: VoiceGender): void {
   try {
-    if (name) localStorage.setItem(VOICE_NAME_KEY, name);
-    else localStorage.removeItem(VOICE_NAME_KEY);
+    localStorage.setItem(GENDER_KEY, g);
   } catch {
     /* 忽略 */
   }
 }
 
-/** 這台裝置上的中文語音（台灣優先）。語音清單有時要等一下才載入完 */
-export function chineseVoices(): Promise<SpeechSynthesisVoice[]> {
-  if (typeof speechSynthesis === 'undefined') return Promise.resolve([]);
-  const pick = () =>
-    speechSynthesis
-      .getVoices()
-      .filter((v) => v.lang.toLowerCase().replace('_', '-').startsWith('zh'))
-      .sort((a, b) => Number(b.lang.toLowerCase().endsWith('tw')) - Number(a.lang.toLowerCase().endsWith('tw')));
-  const now = pick();
-  if (now.length) return Promise.resolve(now);
+function zhVoices(): SpeechSynthesisVoice[] {
+  return speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().replace('_', '-').startsWith('zh'));
+}
+
+/** 依候選名單找這台裝置上的語音（台灣中文優先） */
+function findVoice(candidates: string[]): SpeechSynthesisVoice | undefined {
+  const voices = zhVoices().sort(
+    (a, b) => Number(b.lang.toLowerCase().replace('_', '-') === 'zh-tw') - Number(a.lang.toLowerCase().replace('_', '-') === 'zh-tw'),
+  );
+  for (const name of candidates) {
+    const v = voices.find((x) => x.name.includes(name));
+    if (v) return v;
+  }
+  return undefined;
+}
+
+/** 等語音清單載入完（有些瀏覽器要等一下），回傳這台裝置有沒有女聲／男聲 */
+export function availableGenders(style: SpeechStyle): Promise<Record<VoiceGender, string | null>> {
+  if (typeof speechSynthesis === 'undefined') return Promise.resolve({ female: null, male: null });
+  const check = () => ({ female: findVoice(style.femaleVoices)?.name ?? null, male: findVoice(style.maleVoices)?.name ?? null });
+  if (zhVoices().length) return Promise.resolve(check());
   return new Promise((resolve) => {
-    const done = () => resolve(pick());
+    const done = () => resolve(check());
     speechSynthesis.addEventListener('voiceschanged', done, { once: true });
     setTimeout(done, 1500);
   });
 }
 
 function pickVoice(style: SpeechStyle): SpeechSynthesisVoice | undefined {
-  const voices = speechSynthesis.getVoices();
-  const chosen = getChosenVoiceName();
-  const byName = (n: string) => voices.find((v) => v.name === n) ?? voices.find((v) => v.name.includes(n) && v.lang.toLowerCase().startsWith('zh'));
+  const g = getChosenGender(style.defaultGender);
   return (
-    (chosen ? byName(chosen) : undefined) ??
-    style.preferredVoices.map(byName).find(Boolean) ??
-    voices.find((v) => v.lang.toLowerCase().replace('_', '-') === 'zh-tw') ??
-    voices.find((v) => v.lang.toLowerCase().startsWith('zh'))
+    findVoice(g === 'male' ? style.maleVoices : style.femaleVoices) ??
+    findVoice(g === 'male' ? style.femaleVoices : style.maleVoices) ??
+    zhVoices().find((v) => v.lang.toLowerCase().replace('_', '-') === 'zh-tw') ??
+    zhVoices()[0]
   );
 }
 
@@ -179,7 +185,7 @@ export function browserSpeaker(style: SpeechStyle, onTalking: (talking: boolean)
 }
 
 /** 試聽：用指定的語音念一句示範口令 */
-export function previewVoice(style: SpeechStyle, text = '右手，再抬高！膝蓋，再彎一點！'): void {
+export function previewVoice(style: SpeechStyle, text = '兩側推。右手再抬高一點。'): void {
   if (typeof speechSynthesis === 'undefined') return;
   speechSynthesis.cancel();
   speechSynthesis.speak(makeUtterance(text, style));

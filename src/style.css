@@ -598,14 +598,31 @@ button.big {
   display: none;
 }
 
-.voice-select {
-  font: inherit;
+.voice-options {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  padding: 3px;
+}
+
+.home-hero .voice-option {
+  font-size: 1rem;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+}
+
+.home-hero .voice-option.active {
+  background: #fff;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.voice-note {
   font-weight: 400;
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 0;
-  max-width: 100%;
-  color: var(--fg);
+  font-size: 0.9rem;
+  opacity: 0.85;
 }
 
 .home-hero .voice-preview {

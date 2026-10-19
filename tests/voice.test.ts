@@ -1,7 +1,7 @@
 // 語音教練的測試：只講重點、口令式、不會一直講話
 import { describe, expect, it } from 'vitest';
 import { musicVolume } from '../src/feedback/music';
-import { asCommand, VoiceCoach, type Speaker } from '../src/feedback/voice';
+import { VoiceCoach, type Speaker } from '../src/feedback/voice';
 
 const opts = { correctionIntervalMs: 5000, repeatSameMs: 10000, minPersistMs: 1500, notVisibleIntervalMs: 10000 };
 
@@ -17,16 +17,10 @@ function hold(coach: VoiceCoach, text: string, from: number, ms: number) {
 }
 
 describe('語音教練', () => {
-  it('進入新的一步只喊動作名稱（口令式）', () => {
+  it('進入新的一步只念動作名稱（自然語氣，不加料）', () => {
     const { said, coach } = setup();
     coach.stepStart('深蹲', 0);
-    expect(said).toEqual(['深蹲！']);
-  });
-
-  it('口令化：結尾加驚嘆號，句號換成驚嘆號', () => {
-    expect(asCommand('右手再抬高')).toBe('右手再抬高！');
-    expect(asCommand('右手再抬高。')).toBe('右手再抬高！');
-    expect(asCommand('準備好了嗎？')).toBe('準備好了嗎？');
+    expect(said).toEqual(['深蹲']);
   });
 
   it('錯誤要持續 1.5 秒才提醒', () => {
@@ -34,24 +28,24 @@ describe('語音教練', () => {
     hold(coach, '右手再抬高', 0, 1300);
     expect(said).toEqual([]);
     hold(coach, '右手再抬高', 1400, 200);
-    expect(said).toEqual(['右手再抬高！']);
+    expect(said).toEqual(['右手再抬高']);
   });
 
   it('同一句話 10 秒內不重複', () => {
     const { said, coach } = setup();
     hold(coach, '右手再抬高', 0, 11400); // 第一次在 1.5 秒講出，11.5 秒前不會再講
-    expect(said).toEqual(['右手再抬高！']);
+    expect(said).toEqual(['右手再抬高']);
     hold(coach, '右手再抬高', 11500, 100);
-    expect(said).toEqual(['右手再抬高！', '右手再抬高！']);
+    expect(said).toEqual(['右手再抬高', '右手再抬高']);
   });
 
   it('兩次提醒至少間隔 5 秒', () => {
     const { said, coach } = setup();
     hold(coach, '右手再抬高', 0, 1500);
     hold(coach, '左手再抬高', 1600, 4800); // 第一次在 1.5 秒講出，6.5 秒前不會講下一句
-    expect(said).toEqual(['右手再抬高！']);
+    expect(said).toEqual(['右手再抬高']);
     hold(coach, '左手再抬高', 6500, 100);
-    expect(said).toEqual(['右手再抬高！', '左手再抬高！']);
+    expect(said).toEqual(['右手再抬高', '左手再抬高']);
   });
 
   it('動作做對了（沒有提示）就不講話', () => {
@@ -79,7 +73,7 @@ describe('語音教練', () => {
   it('「退後一點，全身入鏡」每 10 秒最多一次', () => {
     const { said, coach } = setup();
     for (let t = 0; t <= 15000; t += 100) coach.notVisible(t);
-    expect(said).toEqual(['退後一點，全身入鏡！', '退後一點，全身入鏡！']);
+    expect(said).toEqual(['退後一點，全身入鏡', '退後一點，全身入鏡']);
   });
 });
 

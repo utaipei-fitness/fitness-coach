@@ -2,7 +2,7 @@
 // （階段 4 會加入個人資料輸入）
 import type { AppConfig, ResolvedStep } from '../config/load';
 import { getMusic } from '../feedback/music';
-import { chineseVoices, getChosenVoiceName, previewVoice, primeSpeech, setChosenVoiceName } from '../feedback/voice';
+import { availableGenders, getChosenGender, previewVoice, primeSpeech, setChosenGender, type VoiceGender } from '../feedback/voice';
 import logoUrl from '../assets/utaipei-logo.png';
 import { configSummary } from './config-summary';
 import { el } from './dom';
@@ -71,28 +71,43 @@ export function renderHome(root: HTMLElement, config: AppConfig, state: HomeStat
     void actions.onPracticeWithFile(file);
   });
 
-  // 教練聲音：列出這台裝置上的中文語音，可以試聽並選擇（記在這台裝置上）
-  const voiceSelect = el('select', { class: 'voice-select', 'aria-label': '教練聲音' });
+  // 教練聲音：女聲／男聲二選一，可試聽（記在這台裝置上）
+  const style = config.settings.voice;
+  const genderButtons = {
+    female: el('button', { class: 'voice-option' }, '女聲'),
+    male: el('button', { class: 'voice-option' }, '男聲'),
+  };
   const previewButton = el('button', { class: 'voice-preview' }, '▶ 試聽');
-  const voiceRow = el('div', { class: 'voice-row', hidden: '' }, el('span', {}, '🔊 教練聲音'), voiceSelect, previewButton);
-  void chineseVoices().then((voices) => {
-    if (voices.length === 0) return;
-    const chosen = getChosenVoiceName();
-    voiceSelect.replaceChildren(
-      el('option', { value: '' }, '自動選擇'),
-      ...voices.map((v) => {
-        const o = el('option', { value: v.name }, `${v.name}（${v.lang}）`);
-        if (v.name === chosen) o.selected = true;
-        return o;
-      }),
-    );
+  const voiceNote = el('span', { class: 'voice-note' });
+  const voiceRow = el(
+    'div',
+    { class: 'voice-row', hidden: '' },
+    el('span', {}, '🔊 教練聲音'),
+    el('span', { class: 'voice-options' }, genderButtons.female, genderButtons.male),
+    previewButton,
+    voiceNote,
+  );
+  const showGender = () => {
+    const g = getChosenGender(style.defaultGender);
+    for (const [k, b] of Object.entries(genderButtons)) b.classList.toggle('active', k === g);
+  };
+  void availableGenders(style).then((avail) => {
+    if (!avail.female && !avail.male) return;
+    genderButtons.male.disabled = !avail.male;
+    genderButtons.female.disabled = !avail.female;
+    if (!avail.male) voiceNote.textContent = '（這台裝置沒有男聲）';
+    if (!avail.female) voiceNote.textContent = '（這台裝置沒有女聲）';
     voiceRow.hidden = false;
+    showGender();
   });
-  voiceSelect.addEventListener('change', () => {
-    setChosenVoiceName(voiceSelect.value || null);
-    previewVoice(config.settings.voice);
-  });
-  previewButton.addEventListener('click', () => previewVoice(config.settings.voice));
+  for (const [k, b] of Object.entries(genderButtons) as [VoiceGender, HTMLButtonElement][]) {
+    b.addEventListener('click', () => {
+      setChosenGender(k);
+      showGender();
+      previewVoice(style);
+    });
+  }
+  previewButton.addEventListener('click', () => previewVoice(style));
 
   const steps = config.routine.steps;
   const stepCards = steps.map((s, i) => {

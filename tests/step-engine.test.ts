@@ -4,7 +4,7 @@ import type { ResolvedDynamicStep, ResolvedFollowStep, ResolvedStaticStep } from
 import { Session, StepEngine } from '../src/engine/step-engine';
 import type { StepTargets } from '../src/reference/reference-data';
 
-const elbowDef = { name: '右手肘', side: 'right', type: 'joint', points: ['rightShoulder', 'rightElbow', 'rightWrist'] } as const;
+const elbowDef = { name: '右手肘', group: 'upper', side: 'right', type: 'joint', points: ['rightShoulder', 'rightElbow', 'rightWrist'] } as const;
 // 基本測試先關掉寬限（0），寬限另外測
 const opts = { hysteresisDeg: 5, repTimeoutSec: 5, holdGraceMs: 0, checkpointWindowMs: 0 };
 

@@ -9,6 +9,8 @@
   "judge": {
     "toleranceDeg": 20,     // 預設容許角度：與標準相差 ±20 度以內算達標
     "extraToleranceDeg": -5,  // 整體調整：所有角度（包括 routine.json 個別設定的）的容許範圍都加上這個度數；負數 = 更嚴格、0 = 不調整
+    // 依部位調整容許角度（加在上面兩項之後；負數 = 更嚴格）。部位見 angles.json 的 group
+    "groupAdjustDeg": { "upper": -3, "lower": 0, "ankle": 5, "trunk": 0 },
     "hysteresisDeg": 8,     // 防閃爍緩衝：進入範圍要 ≤ 容許角度，離開範圍要超過「容許角度 + 8」才算
     "holdGraceMs": 300,     // 靜態寬限：維持途中短暫跑出範圍不到 0.3 秒，不會中斷計時
     "checkpointWindowMs": 500, // 動態寬限：每個角度在 0.5 秒內各自到位過，就算到達檢查點（不必同一瞬間）
@@ -56,12 +58,15 @@
   },
 
   // ── 語音提示（瀏覽器內建語音，不需安裝軟體；練習畫面右上角 🔊 可開關）──
-  // 風格：像教練喊口令，只講「動作名稱」與「最需要修正的一項」，不講「很好／完成」、報數等
+  // 風格：自然、有活力；只講「動作名稱」與「最需要修正的一項」，不講「很好／完成」、報數等
   "voice": {
     "enabled": true,        // 預設是否開啟語音
-    "rate": 1.15,           // 語速（1 = 正常；稍快比較有活力）
-    "pitch": 1.15,          // 音調（1 = 正常；稍高比較有精神）
-    "preferredVoices": ["美佳", "Mei-Jia", "Eddy", "Flo"], // 偏好的語音（依序找裝置上有的）；首頁也可以自己選並試聽
+    "rate": 1.05,           // 語速（1 = 正常；稍快一點點比較有活力，太快會不自然）
+    "pitch": 1.0,           // 音調（1 = 正常）
+    "defaultGender": "female", // 預設聲音："female" 女聲 / "male" 男聲（首頁可切換並試聽）
+    // 女聲、男聲各自的候選語音（依序找這台裝置上有的；不同手機、電腦內建的語音不同）
+    "femaleVoices": ["HsiaoChen Online", "HsiaoYu Online", "Google 國語（臺灣）", "美佳", "Mei-Jia", "Meijia", "Sandy", "Shelley", "Flo", "Hanhan", "Yating"],
+    "maleVoices": ["YunJhe Online", "Zhiwei", "Reed", "Eddy", "Rocko", "Grandpa"],
     "correctionIntervalSec": 5, // 兩次修正提醒之間至少間隔幾秒
     "repeatSameSec": 10,    // 同一句提醒至少隔幾秒才會再講
     "minPersistMs": 1500,   // 錯誤要持續多久（毫秒）才提醒，避免一直講話

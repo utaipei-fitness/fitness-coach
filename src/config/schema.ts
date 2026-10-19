@@ -37,6 +37,12 @@ export const settingsSchema = strict({
   judge: strict({
     toleranceDeg: degrees,
     extraToleranceDeg: z.number().min(-30).max(90),
+    groupAdjustDeg: strict({
+      upper: z.number().min(-30).max(45),
+      lower: z.number().min(-30).max(45),
+      ankle: z.number().min(-30).max(45),
+      trunk: z.number().min(-30).max(45),
+    }),
     hysteresisDeg: z.number().min(0).max(90),
     holdGraceMs: z.number().int().min(0).max(5000),
     checkpointWindowMs: z.number().int().min(0).max(5000),
@@ -75,7 +81,9 @@ export const settingsSchema = strict({
     enabled: z.boolean(),
     rate: z.number().min(0.5).max(2),
     pitch: z.number().min(0.5).max(2),
-    preferredVoices: z.array(z.string()),
+    defaultGender: z.enum(['female', 'male']),
+    femaleVoices: z.array(z.string()),
+    maleVoices: z.array(z.string()),
     correctionIntervalSec: z.number().min(0),
     repeatSameSec: z.number().min(0),
     minPersistMs: z.number().int().min(0),
@@ -101,6 +109,7 @@ export const settingsSchema = strict({
 const angleCommon = {
   name: z.string().min(1),
   side: z.enum(['left', 'right', 'center']),
+  group: z.enum(['upper', 'lower', 'ankle', 'trunk']),
 };
 
 /** 三點夾角：在中間那個點量 0–180 度 */
@@ -145,6 +154,8 @@ const stepCommon = {
   }),
   timeoutSec: z.number().positive().optional(),
   maxAttempts: z.number().int().min(1).optional(),
+  /** 這一步所有角度的容許範圍再加減幾度（正數 = 放寬） */
+  toleranceAdjustDeg: z.number().min(-30).max(45).optional(),
 };
 
 const staticStepSchema = strict({

@@ -211,6 +211,18 @@ describe('預設值套用', () => {
     expect(r.config.routine.steps[0]!.angles.map((x) => x.tolerance)).toEqual([r.config.settings.judge.toleranceDeg + 10, 17]);
   });
 
+  it('部位調整與單步調整會疊加到容許角度上（最少保留 3 度）', () => {
+    const settings = base['settings.json']!.replace('"upper": 0', '"upper": -3');
+    const routine = parse(base['routine.json']!);
+    routine.steps[0].toleranceAdjustDeg = 10;
+    routine.steps[0].angles.rightElbow.tolerance = 2;
+    const r = parseConfigFiles({ ...base, 'settings.json': settings, 'routine.json': JSON.stringify(routine) });
+    if (!r.ok) throw new Error(messages(r.errors));
+    const d = r.config.settings.judge.toleranceDeg;
+    // 手肘屬於上半身（-3），這一步再 +10
+    expect(r.config.routine.steps[0]!.angles.map((x) => x.tolerance)).toEqual([d - 3 + 10, Math.max(3, 2 - 3 + 10)]);
+  });
+
   it('enabled: false 的步驟不會出現在練習中', () => {
     expect(load().routine.steps.map((s) => s.id)).toEqual(['a', 'c']);
   });

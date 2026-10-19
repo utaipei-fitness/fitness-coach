@@ -35,7 +35,9 @@ function escapeXml(s) {
 async function synthesize({ key, region, voice, rate, text }) {
   const ssml = `<speak version="1.0" xml:lang="zh-TW"><voice name="${voice}"><prosody rate="${rate}">${escapeXml(text)}</prosody></voice></speak>`;
   for (let attempt = 1; ; attempt++) {
-    const res = await fetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`, {
+    let res;
+    try {
+      res = await fetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`, {
       method: 'POST',
       headers: {
         'Ocp-Apim-Subscription-Key': key,
@@ -44,7 +46,14 @@ async function synthesize({ key, region, voice, rate, text }) {
         'User-Agent': 'fitness-coach',
       },
       body: ssml,
-    });
+      });
+    } catch (err) {
+      // 網路暫時斷線：等一下再試（最多 5 次）
+      if (attempt >= 5) throw new Error(`網路連線失敗：${err instanceof Error ? err.message : err}`);
+      console.log('[voices] 網路連線中斷，10 秒後重試…');
+      await sleep(10000);
+      continue;
+    }
     if (res.ok) return new Uint8Array(await res.arrayBuffer());
     if (res.status === 429 && attempt < 5) {
       console.log('[voices] 太快了，等 20 秒再試…');

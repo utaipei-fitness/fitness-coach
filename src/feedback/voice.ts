@@ -129,6 +129,22 @@ function findVoice(candidates: string[]): SpeechSynthesisVoice | undefined {
   return undefined;
 }
 
+/** 這個瀏覽器偵測到的所有語音（排查「為什麼沒有男聲」用）；中文排前面 */
+export function detectedVoices(): Promise<{ name: string; lang: string; local: boolean }[]> {
+  if (typeof speechSynthesis === 'undefined') return Promise.resolve([]);
+  const list = () =>
+    speechSynthesis
+      .getVoices()
+      .map((v) => ({ name: v.name, lang: v.lang, local: v.localService }))
+      .sort((a, b) => Number(b.lang.toLowerCase().startsWith('zh')) - Number(a.lang.toLowerCase().startsWith('zh')) || a.lang.localeCompare(b.lang));
+  if (speechSynthesis.getVoices().length) return Promise.resolve(list());
+  return new Promise((resolve) => {
+    const done = () => resolve(list());
+    speechSynthesis.addEventListener('voiceschanged', done, { once: true });
+    setTimeout(done, 1500);
+  });
+}
+
 /** 等語音清單載入完（有些瀏覽器要等一下），回傳這台裝置有沒有女聲／男聲 */
 export function availableGenders(style: SpeechStyle): Promise<Record<VoiceGender, string | null>> {
   if (typeof speechSynthesis === 'undefined') return Promise.resolve({ female: null, male: null });

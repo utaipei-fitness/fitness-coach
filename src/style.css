@@ -631,3 +631,25 @@ button.big {
   background: rgba(255, 255, 255, 0.2);
   color: #fff;
 }
+
+/* 偵測到的語音清單 */
+.voice-diag {
+  margin: 12px 0;
+  padding: 12px 14px;
+  background: var(--bg);
+  border-radius: 12px;
+}
+
+.voice-diag h2 {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+}
+
+.voice-diag ul {
+  margin: 6px 0;
+  padding-left: 1.2em;
+}
+
+.voice-diag b {
+  color: var(--accent);
+}

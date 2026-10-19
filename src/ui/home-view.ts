@@ -2,7 +2,7 @@
 // （階段 4 會加入個人資料輸入）
 import type { AppConfig, ResolvedStep } from '../config/load';
 import { getMusic } from '../feedback/music';
-import { availableGenders, getChosenGender, previewVoice, primeSpeech, setChosenGender, type VoiceGender } from '../feedback/voice';
+import { availableGenders, detectedVoices, getChosenGender, previewVoice, primeSpeech, setChosenGender, type VoiceGender } from '../feedback/voice';
 import logoUrl from '../assets/utaipei-logo.png';
 import { configSummary } from './config-summary';
 import { el } from './dom';
@@ -27,6 +27,30 @@ function conditionText(step: ResolvedStep): string {
   if (step.type === 'static') return `維持 ${step.holdMs / 1000} 秒`;
   if (step.type === 'follow') return `跟著做 ${step.durationSec} 秒`;
   return `${step.reps} 次・${step.checkpoints.map((c) => c.name).join(' → ')}`;
+}
+
+/** 偵測到的語音清單：列出這個瀏覽器抓到的語音，並標出目前女聲／男聲用的是哪一個 */
+function voiceDiagnostics(style: Parameters<typeof availableGenders>[0]): HTMLElement {
+  const box = el('section', { class: 'voice-diag' }, el('h2', {}, '偵測到的語音清單'), el('p', { class: 'muted' }, '讀取中…'));
+  void Promise.all([detectedVoices(), availableGenders(style)]).then(([voices, avail]) => {
+    const zh = voices.filter((v) => v.lang.toLowerCase().startsWith('zh'));
+    const tag = (name: string) => (name === avail.female ? '（目前的女聲）' : name === avail.male ? '（目前的男聲）' : '');
+    box.replaceChildren(
+      el('h2', {}, '偵測到的語音清單'),
+      el(
+        'p',
+        { class: 'muted' },
+        `這個瀏覽器共有 ${voices.length} 個語音，其中中文 ${zh.length} 個。` +
+          `女聲：${avail.female ?? '沒有'}；男聲：${avail.male ?? '沒有'}。` +
+          (avail.male ? '' : '沒有男聲時，可到 Mac「系統設定 → 輔助使用 → 朗讀內容 → 管理聲音」下載「中文（台灣）」男聲（例如 Reed、Eddy），再重新打開瀏覽器。'),
+      ),
+      zh.length
+        ? el('ul', {}, ...zh.map((v) => el('li', {}, `${v.name}　${v.lang}${v.local ? '' : '（線上語音）'}`, el('b', {}, tag(v.name)))))
+        : el('p', {}, '沒有偵測到任何中文語音。'),
+      el('p', { class: 'muted' }, `中文以外的語音：${voices.length - zh.length} 個（未列出）`),
+    );
+  });
+  return box;
 }
 
 export function renderHome(root: HTMLElement, config: AppConfig, state: HomeState, actions: HomeActions): void {
@@ -160,6 +184,7 @@ export function renderHome(root: HTMLElement, config: AppConfig, state: HomeStat
           testButton,
           import.meta.env.DEV ? el('a', { href: './tools/reference.html', class: 'button-link' }, '🛠 標準動作建置工具') : null,
         ),
+        voiceDiagnostics(style),
         configSummary(config),
       ),
     ),

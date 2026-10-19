@@ -598,6 +598,16 @@ button.big {
   display: none;
 }
 
+.camera-select {
+  font: inherit;
+  font-size: 0.95rem;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 0;
+  max-width: min(100%, 360px);
+  color: var(--fg);
+}
+
 .voice-options {
   display: inline-flex;
   background: rgba(255, 255, 255, 0.2);

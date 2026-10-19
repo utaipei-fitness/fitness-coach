@@ -4,6 +4,7 @@ import type { AppConfig, ResolvedStep } from '../config/load';
 import { getMusic } from '../feedback/music';
 import { availableGenders, detectedVoices, getChosenGender, previewVoice, primeSpeech, setChosenGender, type VoiceGender } from '../feedback/voice';
 import logoUrl from '../assets/utaipei-logo.png';
+import { getChosenCameraId, listCameras, setChosenCameraId } from '../input/video-source';
 import { configSummary } from './config-summary';
 import { el } from './dom';
 
@@ -66,7 +67,9 @@ export function renderHome(root: HTMLElement, config: AppConfig, state: HomeStat
     { class: 'home-status' },
     state.error ? el('p', { class: 'error-banner' }, `⚠ ${state.error}`) : null,
     ...(state.notReady ?? []).map((m) => el('p', { class: 'error-banner' }, `⚠ ${m}`)),
-    ready && !state.error ? el('p', { class: 'muted' }, '把手機橫放（或直放）在 2～3 公尺外，讓全身入鏡，然後按「開始練習」。') : null,
+    ready && !state.error
+      ? el('p', { class: 'muted' }, '站到鏡頭前讓全身入鏡（筆電約 2 公尺、手機直放約 1.5 公尺），然後按「開始練習」。只動上半身的動作，拍到腰部以上即可。')
+      : null,
   );
 
   const busy = (text: string) => {
@@ -133,6 +136,26 @@ export function renderHome(root: HTMLElement, config: AppConfig, state: HomeStat
   }
   previewButton.addEventListener('click', () => previewVoice(style));
 
+  // 選擇鏡頭：例如外接廣角鏡頭、或用 iPhone 當網路攝影機（Mac 的「接續互通相機」），視野更廣、可以站近一點
+  const cameraSelect = el('select', { class: 'camera-select', 'aria-label': '鏡頭' });
+  const cameraNote = el('span', { class: 'voice-note' });
+  const cameraRow = el('div', { class: 'voice-row', hidden: '' }, el('span', {}, '📷 鏡頭'), cameraSelect, cameraNote);
+  void listCameras().then((cams) => {
+    if (cams.length === 0) return;
+    const chosen = getChosenCameraId();
+    cameraSelect.replaceChildren(
+      el('option', { value: '' }, '預設鏡頭'),
+      ...cams.map((c, i) => {
+        const o = el('option', { value: c.id }, c.label || `鏡頭 ${i + 1}`);
+        if (c.id === chosen) o.selected = true;
+        return o;
+      }),
+    );
+    if (cams.every((c) => !c.label)) cameraNote.textContent = '（開過一次鏡頭後，這裡會顯示鏡頭名稱）';
+    cameraRow.hidden = cams.length < 2 && cams.every((c) => !c.label);
+  });
+  cameraSelect.addEventListener('change', () => setChosenCameraId(cameraSelect.value || null));
+
   const steps = config.routine.steps;
   const stepCards = steps.map((s, i) => {
     const card = el(
@@ -170,6 +193,7 @@ export function renderHome(root: HTMLElement, config: AppConfig, state: HomeStat
         el('p', { class: 'home-sub' }, `共 ${steps.length} 個動作・做對了才進下一步`),
         el('div', { class: 'actions' }, startButton, fileButton, fileInput),
         voiceRow,
+        cameraRow,
         status,
       ),
       el('h2', { class: 'home-section-title' }, '動作列表', el('span', { class: 'muted' }, '　點任一動作可以單獨練習')),

@@ -36,6 +36,43 @@ export async function playVideo(video: HTMLVideoElement): Promise<void> {
   }
 }
 
+// ───────────── 選擇鏡頭（記在這台裝置上） ─────────────
+
+const CAMERA_KEY = 'fitness-coach.camera-id';
+
+export function getChosenCameraId(): string | null {
+  try {
+    return localStorage.getItem(CAMERA_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setChosenCameraId(id: string | null): void {
+  try {
+    if (id) localStorage.setItem(CAMERA_KEY, id);
+    else localStorage.removeItem(CAMERA_KEY);
+  } catch {
+    /* 忽略 */
+  }
+}
+
+/** 這台裝置的鏡頭清單。還沒允許過使用相機時，瀏覽器不會提供名稱（label 為空字串） */
+export async function listCameras(): Promise<{ id: string; label: string }[]> {
+  if (!navigator.mediaDevices?.enumerateDevices) return [];
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  return devices.filter((d) => d.kind === 'videoinput').map((d) => ({ id: d.deviceId, label: d.label }));
+}
+
+function videoConstraints(camera: Settings['camera'], deviceId: string | null): MediaTrackConstraints {
+  return {
+    ...(deviceId ? { deviceId: { exact: deviceId } } : { facingMode: camera.facingMode }),
+    width: { ideal: camera.width },
+    height: { ideal: camera.height },
+    aspectRatio: { ideal: camera.width / camera.height },
+  };
+}
+
 export async function openCamera(camera: Settings['camera']): Promise<VideoSource> {
   if (!navigator.mediaDevices?.getUserMedia) {
     throw new Error(
@@ -46,17 +83,19 @@ export async function openCamera(camera: Settings['camera']): Promise<VideoSourc
   }
 
   let stream: MediaStream;
+  const chosen = getChosenCameraId();
   try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      audio: false,
-      video: {
-        facingMode: camera.facingMode,
-        width: { ideal: camera.width },
-        height: { ideal: camera.height },
-      },
-    });
+    stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: videoConstraints(camera, chosen) });
   } catch (err) {
-    throw new Error(cameraErrorText(err));
+    // 選過的鏡頭不見了（例如拔掉外接鏡頭）：改用預設鏡頭
+    const name = err instanceof DOMException ? err.name : '';
+    if (!chosen || (name !== 'NotFoundError' && name !== 'OverconstrainedError')) throw new Error(cameraErrorText(err));
+    setChosenCameraId(null);
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: videoConstraints(camera, null) });
+    } catch (err2) {
+      throw new Error(cameraErrorText(err2));
+    }
   }
 
   const video = createVideoElement();
@@ -70,7 +109,7 @@ export async function openCamera(camera: Settings['camera']): Promise<VideoSourc
   return {
     video,
     kind: 'camera',
-    label: camera.facingMode === 'user' ? '前鏡頭' : '後鏡頭',
+    label: `${stream.getVideoTracks()[0]?.label || (camera.facingMode === 'user' ? '前鏡頭' : '後鏡頭')}（${video.videoWidth}×${video.videoHeight}）`,
     stop: () => {
       stream.getTracks().forEach((t) => t.stop());
       video.srcObject = null;

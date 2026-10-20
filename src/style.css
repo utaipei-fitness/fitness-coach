@@ -284,100 +284,80 @@ button.big {
 .home-steps {
   list-style: none;
   padding: 0;
-  margin: 20px 0;
+  margin: 12px 0 20px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 6px 16px;
 }
 
-/* 每個動作卡片都是按鈕：點了就單獨練習這個動作 */
+/* 每個動作是一列按鈕：點了就單獨練習 */
 .home-step {
   width: 100%;
-  height: 100%;
   display: flex;
-  gap: 14px;
-  align-items: flex-start;
+  align-items: center;
+  gap: 10px;
   text-align: left;
   background: var(--card);
-  border: 2px solid transparent;
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 1px 6px rgba(15, 42, 46, 0.08);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 8px 12px;
   font-size: 1rem;
-  line-height: 1.5;
-  position: relative;
-  transition: border-color 0.15s, transform 0.15s;
+  line-height: 1.3;
 }
 
 .home-step:not(:disabled):hover,
 .home-step:not(:disabled):focus-visible {
   border-color: var(--accent);
-  transform: translateY(-2px);
-}
-
-.home-step-body {
-  flex: 1;
-  padding-bottom: 22px;
-}
-
-.home-step-go {
-  position: absolute;
-  right: 14px;
-  bottom: 12px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--accent);
-}
-
-.home-section-title {
-  margin: 28px 0 0;
-  font-size: 1.3rem;
-}
-
-.home-section-title .muted {
-  font-size: 0.95rem;
-  font-weight: 400;
-}
-
-/* 校徽：放在白色圓角底上，深色漸層背景上也清楚 */
-.home-logo {
-  float: right;
-  height: clamp(72px, 14vw, 120px);
-  background: #fff;
-  border-radius: 14px;
-  padding: 8px 10px;
-  margin: 0 0 8px 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  background: var(--accent-soft);
 }
 
 .home-step-no {
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   background: var(--accent-soft);
   color: var(--accent);
   font-weight: 800;
-  font-size: 1.2rem;
+  font-size: 0.85rem;
 }
 
 .home-step-name {
-  font-size: 1.2rem;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .home-step-cond {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.home-step-go {
   color: var(--accent);
-  font-weight: 600;
-  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.home-section-title {
+  margin: 24px 0 0;
+  font-size: 1.2rem;
+}
+
+.home-section-title .muted {
+  font-size: 0.9rem;
+  font-weight: 400;
 }
 
 .tag {
+  flex: none;
   font-size: 0.75rem;
   font-weight: 600;
-  margin-left: 8px;
   padding: 2px 8px;
   border-radius: 999px;
   vertical-align: middle;
@@ -662,4 +642,15 @@ button.big {
 
 .voice-diag b {
   color: var(--accent);
+}
+
+/* 校徽：放在白色圓角底上，深色漸層背景上也清楚 */
+.home-logo {
+  float: right;
+  height: clamp(72px, 14vw, 120px);
+  background: #fff;
+  border-radius: 14px;
+  padding: 8px 10px;
+  margin: 0 0 8px 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }

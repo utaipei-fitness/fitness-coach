@@ -24,10 +24,17 @@ export interface HomeState {
 
 const TYPE_NAMES = { static: '靜態', dynamic: '動態', follow: '跟做' } as const;
 
-function conditionText(step: ResolvedStep): string {
+/** 列表上的簡短條件，例如「3 次」「維持 1.5 秒」「8 秒」 */
+function shortCondition(step: ResolvedStep): string {
   if (step.type === 'static') return `維持 ${step.holdMs / 1000} 秒`;
-  if (step.type === 'follow') return `跟著做 ${step.durationSec} 秒`;
-  return `${step.reps} 次・${step.checkpoints.map((c) => c.name).join(' → ')}`;
+  if (step.type === 'follow') return `${step.durationSec} 秒`;
+  return `${step.reps} 次`;
+}
+
+/** 滑鼠移上去時顯示的完整說明 */
+function fullDescription(step: ResolvedStep): string {
+  const flow = step.type === 'dynamic' ? `\n流程：${step.checkpoints.map((c) => c.name).join(' → ')}` : '';
+  return `${step.name}：${step.description ?? ''}${flow}\n（點一下單獨練習）`;
 }
 
 /** 偵測到的語音清單：列出這個瀏覽器抓到的語音，並標出目前女聲／男聲用的是哪一個 */
@@ -158,18 +165,15 @@ export function renderHome(root: HTMLElement, config: AppConfig, state: HomeStat
 
   const steps = config.routine.steps;
   const stepCards = steps.map((s, i) => {
+    // 精簡的一列：編號、名稱、類型、條件、▶（完整說明放在滑鼠提示）
     const card = el(
       'button',
-      { class: 'home-step', title: `單獨練習「${s.name}」` },
+      { class: 'home-step', title: fullDescription(s) },
       el('span', { class: 'home-step-no' }, String(i + 1)),
-      el(
-        'div',
-        { class: 'home-step-body' },
-        el('div', { class: 'home-step-name' }, s.name, el('span', { class: `tag ${s.type}` }, TYPE_NAMES[s.type])),
-        el('div', { class: 'muted' }, s.description ?? ''),
-        el('div', { class: 'home-step-cond' }, conditionText(s)),
-      ),
-      el('span', { class: 'home-step-go' }, '▶ 單獨練習'),
+      el('span', { class: 'home-step-name' }, s.name),
+      el('span', { class: `tag ${s.type}` }, TYPE_NAMES[s.type]),
+      el('span', { class: 'home-step-cond' }, shortCondition(s)),
+      el('span', { class: 'home-step-go' }, '▶'),
     );
     card.disabled = !ready;
     card.addEventListener('click', () => {

@@ -425,3 +425,20 @@
 .pr-debug tr.unseen {
   color: #94a3b8;
 }
+
+/* 站位檢查的「略過」按鈕 */
+.pr-skip-setup {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  font-size: clamp(13px, 2vmin, 18px);
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--pr-ink);
+}
+
+.pr-skip-setup[hidden] {
+  display: none;
+}

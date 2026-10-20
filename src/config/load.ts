@@ -74,8 +74,10 @@ export interface AppConfig {
   routine: {
     name: string;
     reference: Routine['reference'];
-    /** 只包含啟用中的步驟，依練習順序排列 */
+    /** 站姿版：只包含啟用中的步驟，依練習順序排列 */
     steps: ResolvedStep[];
+    /** 坐姿版（有設定 reference.seatedArea 才有）：同樣的步驟，但依 seated 設定調整角度或改成跟做 */
+    seatedSteps?: ResolvedStep[];
   };
 }
 
@@ -185,6 +187,15 @@ function checkRoutineAngles(routine: Routine, anglesFile: AnglesFile): ConfigErr
   const known = Object.keys(anglesFile.angles);
   routine.steps.forEach((step, i) => {
     if (step.type === 'follow') return;
+    for (const id of Object.keys(step.seated?.angles ?? {})) {
+      if (!(id in anglesFile.angles)) {
+        errors.push({
+          file: 'routine.json',
+          ...formatLocation('routine.json', ['steps', i, 'seated', 'angles', id], routine),
+          message: `角度代號「${id}」在 angles.json 裡找不到${didYouMean(id, known)}`,
+        });
+      }
+    }
     for (const id of Object.keys(step.angles)) {
       if (!(id in anglesFile.angles)) {
         errors.push({
@@ -203,56 +214,73 @@ function checkRoutineAngles(routine: Routine, anglesFile: AnglesFile): ConfigErr
 /** 沒有指定 clip 時，示範片段 = 時間點前後各多播這麼多秒 */
 const CLIP_PADDING_SEC = 1;
 
-function resolve(settings: Settings, anglesFile: AnglesFile, routine: Routine): AppConfig {
-  const steps: ResolvedStep[] = routine.steps
-    .filter((s) => s.enabled !== false)
-    .map((s) => {
-      if (s.type === 'follow') {
-        return {
-          type: 'follow',
-          id: s.id,
-          name: s.name,
-          description: s.description,
-          clip: s.clip,
-          angles: [],
-          durationSec: s.durationSec,
-          timeoutSec: settings.giveUp.timeoutSec,
-          maxAttempts: settings.giveUp.maxAttempts,
-        };
-      }
-      const times = s.type === 'static' ? [s.time] : s.checkpoints.map((c) => c.time);
-      const common: ResolvedStepCommon = {
-        id: s.id,
-        name: s.name,
-        description: s.description,
-        clip: s.clip ?? [Math.max(0, Math.min(...times) - CLIP_PADDING_SEC), Math.max(...times) + CLIP_PADDING_SEC],
-        angles: Object.entries(s.angles).map(([id, rule]) => ({
-          id,
-          def: anglesFile.angles[id]!,
-          // 容許角度 = 個別（或預設）＋整體調整＋部位調整＋這一步的調整；至少保留 3 度，避免永遠做不到
-          tolerance: Math.max(
-            3,
-            (rule.tolerance ?? settings.judge.toleranceDeg) +
-              settings.judge.extraToleranceDeg +
-              settings.judge.groupAdjustDeg[anglesFile.angles[id]!.group] +
-              (s.toleranceAdjustDeg ?? 0),
-          ),
-          hintLow: rule.hintLow,
-          hintHigh: rule.hintHigh,
-        })),
-        timeoutSec: s.timeoutSec ?? settings.giveUp.timeoutSec,
-        maxAttempts: s.maxAttempts ?? settings.giveUp.maxAttempts,
-      };
-      return s.type === 'static'
-        ? { ...common, type: 'static', time: s.time, holdMs: s.holdMs ?? settings.judge.holdMs }
-        : { ...common, type: 'dynamic', checkpoints: s.checkpoints, reps: s.reps ?? settings.judge.reps };
-    });
+/** 坐姿版沒有可判定的角度時，「跟做」的秒數 = 示範片段長度 × 這個倍數（6～10 秒） */
+const SEATED_FOLLOW_FACTOR = 2;
 
+function resolve(settings: Settings, anglesFile: AnglesFile, routine: Routine): AppConfig {
+  const enabled = routine.steps.filter((s) => s.enabled !== false);
+  const steps = enabled.map((s) => resolveStep(s, settings, anglesFile, 'standing'));
+  const seatedSteps = routine.reference.seatedArea ? enabled.map((s) => resolveStep(s, settings, anglesFile, 'seated')) : undefined;
   return {
     settings,
     angles: anglesFile.angles,
-    routine: { name: routine.name, reference: routine.reference, steps },
+    routine: { name: routine.name, reference: routine.reference, steps, seatedSteps },
   };
+}
+
+type Step = Routine['steps'][number];
+
+function resolveStep(s: Step, settings: Settings, anglesFile: AnglesFile, variant: 'standing' | 'seated'): ResolvedStep {
+  const follow = (durationSec: number, clip: [number, number]): ResolvedStep => ({
+    type: 'follow',
+    id: s.id,
+    name: s.name,
+    description: s.description,
+    clip,
+    angles: [],
+    durationSec,
+    timeoutSec: settings.giveUp.timeoutSec,
+    maxAttempts: settings.giveUp.maxAttempts,
+  });
+  if (s.type === 'follow') return follow(s.durationSec, s.clip);
+
+  const times = s.type === 'static' ? [s.time] : s.checkpoints.map((c) => c.time);
+  const clip: [number, number] = s.clip ?? [Math.max(0, Math.min(...times) - CLIP_PADDING_SEC), Math.max(...times) + CLIP_PADDING_SEC];
+
+  // 坐姿版：依 seated 設定，或預設只保留上半身角度
+  let angleRules = s.angles;
+  if (variant === 'seated') {
+    if (s.seated?.followSec) return follow(s.seated.followSec, clip);
+    angleRules =
+      s.seated?.angles ?? Object.fromEntries(Object.entries(s.angles).filter(([id]) => anglesFile.angles[id]?.group === 'upper'));
+    if (Object.keys(angleRules).length === 0) return follow(Math.min(10, Math.max(6, Math.round((clip[1] - clip[0]) * SEATED_FOLLOW_FACTOR))), clip);
+  }
+
+  const common: ResolvedStepCommon = {
+    id: s.id,
+    name: s.name,
+    description: s.description,
+    clip,
+    angles: Object.entries(angleRules).map(([id, rule]) => ({
+      id,
+      def: anglesFile.angles[id]!,
+      // 容許角度 = 個別（或預設）＋整體調整＋部位調整＋這一步的調整；至少保留 3 度，避免永遠做不到
+      tolerance: Math.max(
+        3,
+        (rule.tolerance ?? settings.judge.toleranceDeg) +
+          settings.judge.extraToleranceDeg +
+          settings.judge.groupAdjustDeg[anglesFile.angles[id]!.group] +
+          (s.toleranceAdjustDeg ?? 0),
+      ),
+      hintLow: rule.hintLow,
+      hintHigh: rule.hintHigh,
+    })),
+    timeoutSec: s.timeoutSec ?? settings.giveUp.timeoutSec,
+    maxAttempts: s.maxAttempts ?? settings.giveUp.maxAttempts,
+  };
+  return s.type === 'static'
+    ? { ...common, type: 'static', time: s.time, holdMs: s.holdMs ?? settings.judge.holdMs }
+    : { ...common, type: 'dynamic', checkpoints: s.checkpoints, reps: s.reps ?? settings.judge.reps };
 }
 
 // ───────────── 錯誤位置的中文描述 ─────────────

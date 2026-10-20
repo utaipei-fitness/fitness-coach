@@ -61,6 +61,14 @@ export class VoiceCoach {
     this.say(NOT_VISIBLE_TEXT, t);
   }
 
+  /** 站位檢查時人太小：提醒靠近（和入鏡提醒共用間隔） */
+  tooFar(t: number): void {
+    this.pending = null;
+    if (t - this.lastNotVisibleAt < this.opts.notVisibleIntervalMs || t < this.quietUntil) return;
+    this.lastNotVisibleAt = t;
+    this.say(CLOSER_TEXT, t);
+  }
+
   /** 每次更新畫面時呼叫；text 為目前最需要修正的提示（沒有就傳空字串） */
   correction(text: string, t: number): void {
     if (!text) {
@@ -81,7 +89,7 @@ export class VoiceCoach {
 // ───────────── 瀏覽器語音 ─────────────
 
 import { cloudVoiceName, voiceClipUrl, type VoiceGender } from './voice-assets';
-import { NOT_VISIBLE_TEXT, PREVIEW_TEXT } from './voice-phrases';
+import { CLOSER_TEXT, NOT_VISIBLE_TEXT, PREVIEW_TEXT } from './voice-phrases';
 
 export type { VoiceGender };
 

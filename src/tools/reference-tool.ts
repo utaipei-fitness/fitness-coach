@@ -15,6 +15,10 @@ import {
   encodeFrame,
   frameAt,
   loadReferenceFile,
+  referenceFileName,
+  variantArea,
+  VARIANT_NAMES,
+  type Variant,
   referenceVideoUrl,
   staleReason,
   type ReferenceData,
@@ -24,6 +28,9 @@ import { renderConfigErrors } from '../ui/config-error-view';
 import { el } from '../ui/dom';
 import { drawSkeleton } from '../ui/skeleton';
 
+/** 網址加上 ?variant=seated 就處理坐姿版 */
+const variant: Variant = new URLSearchParams(location.search).get('variant') === 'seated' ? 'seated' : 'standing';
+
 const root = document.querySelector<HTMLElement>('#app')!;
 const result = loadBundledConfig();
 if (!result.ok) renderConfigErrors(root, result.errors);
@@ -31,6 +38,12 @@ else void start(result.config);
 
 async function start(config: AppConfig): Promise<void> {
   const { reference } = config.routine;
+  const area = variantArea(config, variant);
+  if (!area) {
+    root.replaceChildren(el('main', { class: 'tool' }, el('p', { class: 'error-banner' }, '⚠ routine.json 沒有設定坐姿版的範圍（reference.seatedArea）')));
+    return;
+  }
+  const outFile = referenceFileName(variant);
   const video = el('video', { controls: '', playsinline: '', muted: '', preload: 'auto' });
   video.muted = true;
   video.src = referenceVideoUrl(reference.video) ?? '';
@@ -50,11 +63,18 @@ async function start(config: AppConfig): Promise<void> {
     el(
       'main',
       { class: 'tool' },
-      el('h1', {}, '標準動作建置工具'),
+      el('h1', {}, `標準動作建置工具（${VARIANT_NAMES[variant]}）`),
+      el(
+        'p',
+        {},
+        el('a', { href: '?variant=standing' }, '站姿版'),
+        '　｜　',
+        el('a', { href: '?variant=seated' }, '坐姿版'),
+      ),
       el(
         'p',
         { class: 'muted' },
-        `影片：assets/reference/${reference.video} ・ 示範者範圍 ${reference.area.join('～')} ・ 每秒 ${reference.fps} 幀 ・ 模型 ${config.settings.pose.model}`,
+        `影片：assets/reference/${reference.video} ・ 示範者範圍 ${area.join('～')} ・ 每秒 ${reference.fps} 幀 ・ 模型 ${config.settings.pose.model}`,
       ),
       status,
       el('div', { class: 'actions' }, extractButton, progress),
@@ -78,7 +98,7 @@ async function start(config: AppConfig): Promise<void> {
       ref = null;
     } else {
       ref = decodeReference(file, config.settings.display.mirrorMode);
-      const stale = staleReason(file, config);
+      const stale = staleReason(file, config, variant);
       const found = file.frames.filter(Boolean).length;
       status.className = stale ? 'tool-status warn' : 'tool-status ok';
       status.textContent = stale
@@ -122,13 +142,13 @@ async function start(config: AppConfig): Promise<void> {
   extractButton.addEventListener('click', async () => {
     extractButton.disabled = true;
     try {
-      const file = await extractAll(video, config, (done, total) => {
+      const file = await extractAll(video, config, area, (done, total) => {
         progress.textContent = `擷取中… ${done} / ${total} 幀（${Math.round((done / total) * 100)}%）`;
       });
       progress.textContent = '存檔中…';
-      const res = await fetch('/__dev/save-generated?file=reference-poses.json', { method: 'POST', body: JSON.stringify(file) });
+      const res = await fetch(`/__dev/save-generated?file=${outFile}`, { method: 'POST', body: JSON.stringify(file) });
       if (!res.ok) throw new Error(await res.text());
-      progress.textContent = '✅ 已存到 generated/reference-poses.json';
+      progress.textContent = `✅ 已存到 generated/${outFile}`;
       await refresh(file);
     } catch (err) {
       progress.textContent = `⚠ 擷取失敗：${err instanceof Error ? err.message : String(err)}`;
@@ -137,13 +157,14 @@ async function start(config: AppConfig): Promise<void> {
     }
   });
 
-  await refresh(await loadReferenceFile());
+  await refresh(await loadReferenceFile(variant));
 }
 
 /** 逐幀擷取整支影片示範者範圍內的骨架 */
 export async function extractAll(
   video: HTMLVideoElement,
   config: AppConfig,
+  area: [number, number],
   onProgress: (done: number, total: number) => void,
 ): Promise<ReferenceFile> {
   const { reference } = config.routine;
@@ -154,8 +175,8 @@ export async function extractAll(
   const estimator = await PoseEstimator.create(config.settings.pose);
   const pipeline = new PosePipeline(estimator, config.settings.pose);
 
-  const sx = Math.round(video.videoWidth * reference.area[0]);
-  const width = Math.round(video.videoWidth * reference.area[1]) - sx;
+  const sx = Math.round(video.videoWidth * area[0]);
+  const width = Math.round(video.videoWidth * area[1]) - sx;
   const height = video.videoHeight;
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -175,11 +196,11 @@ export async function extractAll(
   }
   estimator.close();
   onProgress(total, total);
-  return { version: 1, video: reference.video, area: reference.area, fps: reference.fps, model: config.settings.pose.model, width, height, frames };
+  return { version: 1, video: reference.video, area, fps: reference.fps, model: config.settings.pose.model, width, height, frames };
 }
 
 function drawCrop(canvas: HTMLCanvasElement, video: HTMLVideoElement, config: AppConfig, frame: ReturnType<typeof frameAt>): void {
-  const [a0, a1] = config.routine.reference.area;
+  const [a0, a1] = variantArea(config, variant) ?? config.routine.reference.area;
   const vw = video.videoWidth;
   const vh = video.videoHeight;
   if (!vw) return;

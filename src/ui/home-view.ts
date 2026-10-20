@@ -5,6 +5,7 @@ import { getMusic } from '../feedback/music';
 import { availableGenders, detectedVoices, getChosenGender, previewVoice, primeSpeech, setChosenGender, type VoiceGender } from '../feedback/voice';
 import logoUrl from '../assets/utaipei-logo.png';
 import { getChosenCameraId, listCameras, setChosenCameraId } from '../input/video-source';
+import { VARIANT_NAMES, type Variant } from '../reference/reference-data';
 import { configSummary } from './config-summary';
 import { el } from './dom';
 
@@ -14,12 +15,20 @@ export interface HomeActions {
   onPracticeStep(index: number): Promise<void>;
   onPracticeWithFile(file: File): Promise<void>;
   onCameraTest(): Promise<void>;
+  /** 切換站姿版／坐姿版 */
+  onVariant(v: Variant): void;
+  onHistory(): void;
 }
 
 export interface HomeState {
   /** 標準動作資料還沒準備好的原因（null = 可以開始練習） */
   notReady: string[] | null;
   error?: string;
+  /** 目前的版本與可選的版本（只有一個版本時為空陣列，不顯示切換） */
+  variant: Variant;
+  variants: Variant[];
+  /** 目前版本的步驟 */
+  steps: ResolvedStep[];
 }
 
 const TYPE_NAMES = { static: '靜態', dynamic: '動態', follow: '跟做' } as const;
@@ -163,7 +172,19 @@ export function renderHome(root: HTMLElement, config: AppConfig, state: HomeStat
   });
   cameraSelect.addEventListener('change', () => setChosenCameraId(cameraSelect.value || null));
 
-  const steps = config.routine.steps;
+  // 站姿版／坐姿版切換
+  const variantButtons = state.variants.map((v) => {
+    const b = el('button', { class: `voice-option${v === state.variant ? ' active' : ''}` }, VARIANT_NAMES[v]);
+    b.addEventListener('click', () => v !== state.variant && actions.onVariant(v));
+    return b;
+  });
+  const variantRow = state.variants.length
+    ? el('div', { class: 'voice-row' }, el('span', {}, '🪑 版本'), el('span', { class: 'voice-options' }, ...variantButtons), el('span', { class: 'voice-note' }, state.variant === 'seated' ? '坐在椅子上做，適合長者或膝蓋不適者' : '站著做'))
+    : null;
+  const historyButton = el('button', { class: 'big' }, '📈 練習紀錄');
+  historyButton.addEventListener('click', () => actions.onHistory());
+
+  const steps = state.steps;
   const stepCards = steps.map((s, i) => {
     // 精簡的一列：編號、名稱、類型、條件、▶（完整說明放在滑鼠提示）
     const card = el(
@@ -195,7 +216,8 @@ export function renderHome(root: HTMLElement, config: AppConfig, state: HomeStat
         el('p', { class: 'home-kicker' }, '即時動作比對練習'),
         el('h1', {}, config.routine.name),
         el('p', { class: 'home-sub' }, `共 ${steps.length} 個動作・做對了才進下一步`),
-        el('div', { class: 'actions' }, startButton, fileButton, fileInput),
+        el('div', { class: 'actions' }, startButton, historyButton, fileButton, fileInput),
+        variantRow,
         voiceRow,
         cameraRow,
         status,

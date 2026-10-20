@@ -4,6 +4,18 @@ import { angleValue, mirrorFrame } from '../angles/compute';
 import type { AppConfig, ResolvedStep } from '../config/load';
 import type { PoseFrame } from '../pose/types';
 
+/** 站姿版／坐姿版（同一支影片裡的兩位示範者） */
+export type Variant = 'standing' | 'seated';
+export const VARIANT_NAMES: Record<Variant, string> = { standing: '站姿版', seated: '坐姿版' };
+
+export function variantArea(config: AppConfig, v: Variant): [number, number] | undefined {
+  return v === 'seated' ? config.routine.reference.seatedArea : config.routine.reference.area;
+}
+
+export function referenceFileName(v: Variant): string {
+  return v === 'seated' ? 'reference-poses-seated.json' : 'reference-poses.json';
+}
+
 /** generated/reference-poses.json 的格式（為了檔案小，每個點只存 x、y、可信度） */
 export interface ReferenceFile {
   version: 1;
@@ -57,10 +69,11 @@ export function frameAt(ref: ReferenceData, tSec: number): PoseFrame | null {
 }
 
 /** 標準資料是否是用目前的設定擷取的；不是的話回傳原因 */
-export function staleReason(ref: ReferenceFile, config: AppConfig): string | null {
+export function staleReason(ref: ReferenceFile, config: AppConfig, v: Variant = 'standing'): string | null {
   const r = config.routine.reference;
+  const area = variantArea(config, v);
   if (ref.video !== r.video) return `標準資料是從「${ref.video}」擷取的，但設定的影片是「${r.video}」`;
-  if (ref.area[0] !== r.area[0] || ref.area[1] !== r.area[1]) return '示範者位置範圍（area）改過了';
+  if (!area || ref.area[0] !== area[0] || ref.area[1] !== area[1]) return '示範者位置範圍（area）改過了';
   if (ref.fps !== r.fps) return '每秒擷取幀數（fps）改過了';
   if (ref.model !== config.settings.pose.model) return `標準資料用的模型是 ${ref.model}，現在設定的是 ${config.settings.pose.model}（兩邊要一致）`;
   return null;
@@ -124,11 +137,11 @@ export function computeTargets(ref: ReferenceData, steps: ResolvedStep[], minVis
 
 // ───────────── 載入 ─────────────
 
-const loaders = import.meta.glob<ReferenceFile>('/generated/reference-poses.json', { import: 'default' });
+const loaders = import.meta.glob<ReferenceFile>('/generated/reference-poses*.json', { import: 'default' });
 
 /** 讀取擷取好的標準骨架；還沒擷取過就回傳 null */
-export async function loadReferenceFile(): Promise<ReferenceFile | null> {
-  const load = loaders['/generated/reference-poses.json'];
+export async function loadReferenceFile(v: Variant = 'standing'): Promise<ReferenceFile | null> {
+  const load = loaders[`/generated/${referenceFileName(v)}`];
   return load ? await load() : null;
 }
 

@@ -7,7 +7,15 @@ import { buildReport, scoreComment } from '../../report/score';
 import { el } from '../dom';
 import { ProgressRing } from './ring';
 
-export function renderFinish(root: HTMLElement, config: AppConfig, session: Session, actions: { again(): void; home(): void }): void {
+export interface FinishActions {
+  /** 和上一次整套練習比的分數差（單獨練習或沒有上一次時為 null） */
+  change: number | null;
+  again(): void;
+  home(): void;
+  history(): void;
+}
+
+export function renderFinish(root: HTMLElement, config: AppConfig, session: Session, actions: FinishActions): void {
   const results = session.results;
   const report = buildReport(results, config.settings.scoring);
   const single = results.length === 1;
@@ -19,6 +27,8 @@ export function renderFinish(root: HTMLElement, config: AppConfig, session: Sess
     actions.again();
   });
   home.addEventListener('click', actions.home);
+  const history = el('button', {}, '📈 練習紀錄');
+  history.addEventListener('click', actions.history);
 
   const ring = new ProgressRing();
   ring.set((report.score ?? 0) / 100, report.score === null ? '—' : String(report.score), report.score === null ? '' : '分');
@@ -41,6 +51,13 @@ export function renderFinish(root: HTMLElement, config: AppConfig, session: Sess
           {},
           el('p', { class: 'finish-label' }, '整體動作精確度'),
           el('p', { class: 'finish-comment' }, report.score === null ? '這次沒有可評分的動作' : scoreComment(report.score)),
+          actions.change === null
+            ? null
+            : el(
+                'p',
+                { class: `finish-change ${actions.change > 0 ? 'score-high' : actions.change < 0 ? 'score-low' : ''}` },
+                actions.change > 0 ? `▲ 比上次進步 ${actions.change} 分` : actions.change < 0 ? `▼ 比上次少 ${-actions.change} 分` : '和上次一樣',
+              ),
         ),
       ),
       el(
@@ -73,7 +90,7 @@ export function renderFinish(root: HTMLElement, config: AppConfig, session: Sess
           }),
         ),
       ),
-      el('div', { class: 'actions' }, again, home),
+      el('div', { class: 'actions' }, again, history, home),
     ),
   );
 }

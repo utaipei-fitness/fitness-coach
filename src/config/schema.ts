@@ -51,6 +51,11 @@ export const settingsSchema = strict({
     repTimeoutSec: z.number().positive(),
     minVisibility: z.number().min(0).max(1),
   }),
+  setup: strict({
+    enabled: z.boolean(),
+    holdMs: z.number().int().min(0).max(10000),
+    minBodyHeight: z.number().min(0).max(1),
+  }),
   giveUp: strict({
     timeoutSec: z.number().positive(),
     maxAttempts: z.number().int().min(1),
@@ -161,6 +166,17 @@ const stepCommon = {
   maxAttempts: z.number().int().min(1).optional(),
   /** 這一步所有角度的容許範圍再加減幾度（正數 = 放寬） */
   toleranceAdjustDeg: z.number().min(-30).max(45).optional(),
+  /**
+   * 坐姿版的設定（不寫就用預設規則：只保留上半身的角度；沒有上半身角度就變成「跟做」）
+   *   angles：坐姿版改檢查這些角度（時間點、次數沿用站姿版）
+   *   followSec：坐姿版改成「跟做」幾秒
+   */
+  seated: z
+    .strictObject({
+      angles: z.record(angleId, angleRuleSchema).optional(),
+      followSec: z.number().positive().max(600).optional(),
+    })
+    .optional(),
 };
 
 const staticStepSchema = strict({
@@ -215,6 +231,11 @@ export const routineSchema = strict({
   reference: strict({
     video: z.string().min(1),
     area: z.tuple([ratio, ratio]).refine(([a, b]) => b > a, { error: '格式為 [左邊界, 右邊界]，右邊界要比左邊界大（0 = 畫面最左、1 = 最右）' }),
+    /** 坐姿版示範者的範圍（沒有坐姿版就不寫） */
+    seatedArea: z
+      .tuple([ratio, ratio])
+      .refine(([a, b]) => b > a, { error: '格式為 [左邊界, 右邊界]，右邊界要比左邊界大（0 = 畫面最左、1 = 最右）' })
+      .optional(),
     fps: z.number().positive().max(60),
     music: timeRange.optional(),
   }),

@@ -88,6 +88,7 @@ fitness_coach/
 │   ├── reference/
 │   │   └── reference-data.ts  讀取標準骨架、檢查是否過期、依 routine.json 時間點算目標角度
 │   ├── engine/
+│   │   ├── setup-check.ts  開始前的站位檢查（需要的部位入鏡、人夠大、連續維持）
 │   │   └── step-engine.ts  步驟判定狀態機（靜態維持、動態檢查點、遲滯、逾時、跳過、放寬）＋整套 Session
 │   │                       ——不依賴畫面程式碼，可單獨測試
 │   ├── feedback/
@@ -95,15 +96,17 @@ fitness_coach/
 │   │   ├── voice.ts        語音教練（瀏覽器內建語音）與防囉嗦規則
 │   │   └── music.ts        背景配樂（語音說話時自動調小聲）
 │   ├── report/
-│   │   └── score.ts        評分：完整度、精確度、總分與評語
+│   │   └── score.ts        評分：精確度與極簡報告（未完成／需要修正）
+│   ├── storage/
+│   │   └── history.ts      練習紀錄（localStorage）與統計：連續天數、最近 7 天、各動作趨勢
 │   ├── assets/             圖片（臺北市立大學校徽）
 │   ├── tools/
 │   │   └── reference-tool.ts  建置工具的程式（擷取骨架、看時間與角度、目標角度表）
-│   ├── storage/            ⏳ 本機儲存：個人資料、歷史紀錄、錄製檔（階段 4、5）
 │   └── ui/                 畫面
 │       ├── dom.ts          建立畫面元素的小工具（文字一律當純文字放入）
 │       ├── config-error-view.ts    設定檔錯誤清單畫面
 │       ├── config-summary.ts       設定檔摘要（首頁下方）
+│       ├── history-view.ts 練習紀錄頁（數字卡片、分數折線圖、各動作進步）
 │       ├── home-view.ts    首頁：開始練習（鏡頭／影片檔）、步驟一覽、設定摘要
 │       ├── practice/       練習畫面
 │       │   ├── practice-view.ts  接線＋顯示：標準畫面、使用者畫面、提示列、跳過／放寬、通過提示
@@ -148,6 +151,8 @@ config/*.json → 設定檢查（src/config）→ AppConfig ─┐
   - `mirrorMode: "mirror"`（照畫面跟做）：程式會先把示範者的骨架左右鏡射（x 翻轉＋左右標籤對調），再算目標角度。
   - `mirrorMode: "sameSide"`（依口令同側）：直接用示範者的骨架。
   - 畫面上使用者自己的影像以自拍鏡像方式顯示（`selfieView`），只影響顯示，不影響計算。
+- **站姿版／坐姿版**：同一支影片的兩位示範者（`reference.area`／`reference.seatedArea`）。坐姿版步驟由 `load.ts` 的 `resolveStep(..., 'seated')` 產生：預設只留 `group: "upper"` 的角度，沒有就變跟做；例外寫在步驟的 `seated`。兩個版本共用示範片段（時間同步，只是裁切範圍不同）。建置工具 `?variant=seated` 擷取坐姿版。
+- **練習紀錄**只存在瀏覽器（`storage/history.ts`），不做帳號與雲端。
 - **語音**：iPhone 規定第一次發聲要在使用者點擊的當下，所以首頁的開始按鈕會先呼叫 `primeSpeech()`。新增「開始練習」類的按鈕時記得也要呼叫。
 - **背景配樂**：`feedback/music.ts`，整個網頁共用一個播放器。和語音一樣要在點擊當下開始（`getMusic()?.start()`）；iPhone 不能直接改 `<audio>` 音量，所以用 Web Audio 的 GainNode 控制。
 - **評分**：引擎在 `StepResult` 記錄 `accuracyRatios`（偏差 ÷ 原本容許角度），`report/score.ts` 換算成精確度並產生極簡報告（未完成／需要修正）；整體分數中跳過的動作算 0 分。使用者不要「完整度」。

@@ -27,6 +27,12 @@
 //   toleranceAdjustDeg 這一步所有角度的容許範圍再加減幾度（正數 = 放寬）
 //   enabled: false 可暫時停用這一步（不用刪掉）
 //
+// 坐姿版（左半邊坐在椅子上的示範者）：
+//   預設規則：只保留上半身的角度（angles.json 的 group 為 "upper"）；沒有上半身角度的動作自動變成「跟做」
+//   需要例外時在那一步加上 seated：
+//     "seated": { "angles": { ... } }   坐姿版改檢查這些角度（時間點、次數沿用站姿版）
+//     "seated": { "followSec": 6 }      坐姿版改成「跟做」6 秒
+//
 // 時間點怎麼找：npm run dev 後開 http://localhost:5173/tools/reference.html
 // 改完存檔，目標角度會自動重新計算，不需要其他步驟。
 // ═══════════════════════════════════════════════
@@ -35,7 +41,8 @@
 
   "reference": {
     "video": "jiuzuo-exercise.mp4", // 放在 assets/reference/ 的標準影片檔名
-    "area": [0.5, 1.0],             // 示範者在畫面中的左右範圍（0 = 最左、1 = 最右）；這支影片用右半邊的站姿示範者
+    "area": [0.5, 1.0],             // 站姿版示範者在畫面中的左右範圍（0 = 最左、1 = 最右）：右半邊
+    "seatedArea": [0.0, 0.5],       // 坐姿版示範者的範圍：左半邊坐在椅子上的示範者
     "fps": 15,                      // 擷取骨架時每秒取幾幀（越多越細，但擷取越久、檔案越大）
     "music": [35.0, 228.0]          // 背景配樂：從標準影片的這段時間抽出音訊，練習時循環播放（改了要執行 npm run clips）
   },
@@ -133,6 +140,7 @@
     },
     {
       "id": "knee-down",
+      "seated": { "angles": { "leftHip": { "tolerance": 35, "hintHigh": "左膝再抬高" }, "rightHip": { "tolerance": 35, "hintHigh": "右膝再抬高" } } }, // 坐姿版：坐著抬膝，看髖部角度
       "name": "下壓抬膝",
       "description": "雙手往下壓，同時抬起一側膝蓋，左右交替",
       "type": "dynamic",
@@ -252,6 +260,7 @@
     // ── 開合跳／剪刀腳 ──
     {
       "id": "jumping-jack",
+      "seated": { "angles": { "legSpread": { "tolerance": 15, "hintLow": "雙腳再張開一點", "hintHigh": "雙腳收近一點" } } }, // 坐姿版：手扠腰，只看雙腳開合
       "name": "開合跳",
       "description": "雙腳跳開、雙手往上張開，再併攏",
       "type": "dynamic",
@@ -269,6 +278,7 @@
     },
     {
       "id": "scissor-jump",
+      "seated": { "followSec": 6 }, // 坐姿版：坐著前後擺腿，正面量不到角度 → 跟做
       "name": "前後交叉跳",
       "description": "雙腳前後交叉跳，雙手往兩側張開再放下",
       "type": "dynamic",

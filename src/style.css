@@ -654,3 +654,88 @@ button.big {
   margin: 0 0 8px 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
+
+/* 練習紀錄頁 */
+.hist-stats {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.hist-chart-wrap {
+  position: relative;
+}
+
+.hist-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.hist-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.hist-axis {
+  fill: var(--muted);
+  font-size: 12px;
+}
+
+.hist-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.hist-dot {
+  fill: var(--accent);
+  stroke: var(--card);
+  stroke-width: 2;
+}
+
+.hist-hit {
+  fill: transparent;
+  cursor: pointer;
+  outline: none;
+}
+
+.hist-last {
+  fill: var(--fg);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hist-tip {
+  position: absolute;
+  transform: translate(-50%, -140%);
+  background: var(--fg);
+  color: #fff;
+  font-size: 0.85rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.hist-tip[hidden] {
+  display: none;
+}
+
+.hist-list {
+  margin: 0;
+  padding-left: 1.2em;
+  line-height: 1.9;
+}
+
+.history .finish-block {
+  margin: 12px 0;
+}
+
+.hist-clear {
+  color: var(--bad);
+}
+
+.finish-change {
+  margin: 4px 0 0;
+  font-weight: 700;
+}

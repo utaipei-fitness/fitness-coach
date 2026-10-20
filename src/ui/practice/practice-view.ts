@@ -2,6 +2,7 @@
 // 這裡只負責「接線＋顯示」：判定在 engine/、差異計算在 feedback/、角度在 angles/。
 import { angleValue } from '../../angles/compute';
 import type { AppConfig, ResolvedStep } from '../../config/load';
+import { checkSetup, requiredPoints, SetupGate, type SetupCheck } from '../../engine/setup-check';
 import { engineOptions, Session, type StepView } from '../../engine/step-engine';
 import { alignToReference, arrowSymbol, correctionArrow, topCorrections, type Arrow, type Correction } from '../../feedback/feedback';
 import { getMusic, saveMusicOn } from '../../feedback/music';
@@ -258,7 +259,7 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     opts.onFinish(session!);
   };
 
-  const enterStep = (i: number) => {
+  const enterStep = (i: number, announce = true) => {
     stepIndex = i;
     const step = steps[i]!;
     stepNo.textContent = `第 ${i + 1} / ${steps.length} 步`;
@@ -276,7 +277,7 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     loadReferenceVideo(i);
     stuckBox.hidden = true;
     stuckDismissedAt = -1;
-    coach.stepStart(step.name, performance.now());
+    if (announce) coach.stepStart(step.name, performance.now());
   };
 
   // ── 標準畫面的時間（循環播放這一步的示範片段） ──
@@ -298,9 +299,10 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     const video = source.video;
     const w = video.videoWidth;
     const h = video.videoHeight;
-    if (!w || !h || !session) return;
+    if (!w || !h) return;
     const t0 = performance.now();
     const frame = pipeline.process(video, w, h, t0);
+    if (!session) return onSetupFrame(frame, t0);
 
     const step = steps[stepIndex]!;
     const readings: Record<string, number | null> = {};
@@ -349,7 +351,7 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     for (const a of arrowsFor(frame, view, badIds)) drawArrow(ctx, a, lw * 0.8);
   };
 
-  const drawReference = (refFrame: PoseFrame | null, userFrame: PoseFrame | null, view: StepView, badIds: string[]) => {
+  const drawReference = (refFrame: PoseFrame | null, userFrame: PoseFrame | null, view: StepView | null, badIds: string[]) => {
     const { width, height } = reference.file;
     if (refCanvas.width !== width || refCanvas.height !== height) {
       refCanvas.width = width;
@@ -368,9 +370,9 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     // 標準骨架已換成「練習者的左右」；鏡像模式下畫的時候翻回來，才會和示範者的影像重疊
     if (mirror) flipHorizontal(ctx);
     else ctx.save();
-    drawSkeleton(ctx, refFrame, { color: COLORS.neutral, lineWidth: lw, minVisibility: minVis, segmentColor: segmentColorer(view.checks, config) });
+    drawSkeleton(ctx, refFrame, { color: COLORS.neutral, lineWidth: lw, minVisibility: minVis, segmentColor: segmentColorer(view?.checks ?? [], config) });
     const aligned = userFrame ? alignToReference(userFrame, refFrame) : null;
-    if (aligned) {
+    if (aligned && view) {
       drawSkeleton(ctx, aligned, { color: COLORS.overlay, lineWidth: lw * 0.6, minVisibility: minVis, alpha: 0.55 });
       for (const a of arrowsFor(aligned, view, badIds)) drawArrow(ctx, a, lw * 0.7);
     }
@@ -443,6 +445,76 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     }
   };
 
+  // ── 開始前的站位檢查 ──
+  const required = requiredPoints(steps);
+  const gate = new SetupGate(settings.setup.holdMs);
+  const skipSetupButton = el('button', { class: 'pr-skip-setup', hidden: '' }, '略過檢查 ▶');
+  userStage.parentElement!.append(skipSetupButton);
+
+  const beginSession = () => {
+    if (session) return;
+    skipSetupButton.hidden = true;
+    session = new Session(steps, targets, engineOptions(settings.judge), performance.now());
+    enterStep(0);
+  };
+  skipSetupButton.addEventListener('click', beginSession);
+
+  const beginSetup = () => {
+    enterStep(0, false); // 先讓標準畫面播第一個動作，但還不念名稱
+    stepNo.textContent = '準備';
+    stepName.textContent = '站位檢查';
+    stepDesc.textContent = '站到框內，讓這次練習需要的部位都入鏡，站好會自動開始';
+    checkpointChips.hidden = true;
+    skipSetupButton.hidden = false;
+  };
+
+  const onSetupFrame = (frame: PoseFrame | null, t0: number) => {
+    const res = checkSetup(frame, required, minVis, settings.setup.minBodyHeight);
+    if (gate.update(res.ok, t0)) return beginSession();
+    drawSetup(frame, res, gate.progress(t0));
+    drawReference(frameAt(reference, referenceTime(t0)), null, null, []);
+    if (t0 - lastUi > UI_UPDATE_MS) {
+      lastUi = t0;
+      ring.set(gate.progress(t0), res.ok ? '✓' : '…', '');
+      feedback.className = `pr-feedback ${res.ok ? 'good' : 'warn'}`;
+      feedback.textContent = res.ok
+        ? '很好，保持不動…'
+        : res.tooFar
+          ? '再靠近一點'
+          : `請讓全身入鏡（看不到：${res.missing.slice(0, 3).join('、')}${res.missing.length > 3 ? '…' : ''}）`;
+      if (res.tooFar) coach.tooFar(t0);
+      else if (!res.ok) coach.notVisible(t0);
+    }
+  };
+
+  /** 站位檢查畫面：骨架＋中間的虛線框（站好變綠色） */
+  const drawSetup = (frame: PoseFrame | null, res: SetupCheck, progress: number) => {
+    const { videoWidth: w, videoHeight: h } = source.video;
+    if (userCanvas.width !== w || userCanvas.height !== h) {
+      userCanvas.width = w;
+      userCanvas.height = h;
+    }
+    const ctx = userCanvas.getContext('2d')!;
+    ctx.clearRect(0, 0, w, h);
+    const lw = (h * settings.display.skeletonWidth) / 100;
+    const boxH = h * 0.92;
+    const boxW = Math.min(w * 0.7, boxH * 0.5);
+    ctx.save();
+    ctx.setLineDash([lw * 2, lw * 1.5]);
+    ctx.lineWidth = lw * 0.6;
+    ctx.strokeStyle = res.ok ? COLORS.ok : 'rgba(255,255,255,0.85)';
+    ctx.beginPath();
+    ctx.roundRect((w - boxW) / 2, (h - boxH) / 2, boxW, boxH, lw * 3);
+    ctx.stroke();
+    if (progress > 0) {
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(34,197,94,0.15)';
+      ctx.fillRect((w - boxW) / 2, (h - boxH) / 2 + boxH * (1 - progress), boxW, boxH * progress);
+    }
+    ctx.restore();
+    if (frame) drawSkeleton(ctx, frame, { color: res.ok ? COLORS.ok : COLORS.neutral, lineWidth: lw, minVisibility: minVis });
+  };
+
   // ── 開始 ──
   feedback.textContent = '載入姿態模型中…';
   playVideo(source.video).catch((err: unknown) => {
@@ -453,8 +525,8 @@ export function showPractice(root: HTMLElement, opts: PracticeOptions): void {
     .then((estimator) => {
       if (closed) return;
       const pipeline = new PosePipeline(estimator, settings.pose);
-      session = new Session(steps, targets, engineOptions(settings.judge), performance.now());
-      enterStep(0);
+      if (settings.setup.enabled) beginSetup();
+      else beginSession();
       // 開發測試用：瀏覽器分頁看不到時影片不會播放，可從主控台呼叫 __practiceTick() 手動推進一幀
       if (import.meta.env.DEV) (window as unknown as { __practiceTick?: () => void }).__practiceTick = () => onFrame(pipeline);
       stopLoop = onVideoFrame(source.video, () => {

@@ -3,7 +3,7 @@ import { LANDMARK_NAMES, type LandmarkName } from '../src/pose/landmarks';
 import type { PoseFrame } from '../src/pose/types';
 
 export function makeFrame(
-  points: Partial<Record<LandmarkName, [number, number]>>,
+  points: Partial<Record<LandmarkName, readonly [number, number]>>,
   opts: { t?: number; width?: number; height?: number; visibility?: number } = {},
 ): PoseFrame {
   return {

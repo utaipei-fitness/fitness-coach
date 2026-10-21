@@ -23,6 +23,11 @@ import { renderHistory } from './ui/history-view';
 import { renderHome } from './ui/home-view';
 import { showLiveView } from './ui/live-view';
 import { renderFinish } from './ui/practice/finish-view';
+import { renderFollowFinish } from './ui/follow/follow-finish-view';
+import { renderFollowSetup } from './ui/follow/follow-setup-view';
+import { showFollow, unlockedVideo } from './ui/follow/follow-view';
+import { primeSpeech } from './feedback/voice';
+import type { SavedVideo } from './storage/video-library';
 import { showPractice } from './ui/practice/practice-view';
 
 const root = document.querySelector<HTMLElement>('#app')!;
@@ -107,6 +112,16 @@ async function main(): Promise<void> {
           void goHome();
         },
         onHistory: () => renderHistory(root, variant, VARIANT_NAMES[variant], () => void goHome()),
+        onFollowNew: (file) =>
+          renderFollowSetup(root, config, file, {
+            onStart: (saved) => {
+              primeSpeech();
+              const blob = saved.video ?? file;
+              void follow(saved, blob, unlockedVideo(blob));
+            },
+            onCancel: () => void goHome(),
+          }),
+        onFollowPlay: (saved, video) => void follow(saved, video, unlockedVideo(video)),
       },
     );
   };
@@ -124,6 +139,32 @@ async function main(): Promise<void> {
       steps: session.results.map((r, i) => ({ id: r.stepId, name: r.name, outcome: r.outcome, accuracy: report.steps[i] ?? null })),
     });
     return before !== null && report.score !== null ? report.score - before : null;
+  };
+
+  /** 自選影片跟練：refVideo 要在點擊當下建立（unlockedVideo），才能播放影片聲音 */
+  const follow = async (saved: SavedVideo, videoBlob: Blob, refVideo: HTMLVideoElement): Promise<void> => {
+    let source: VideoSource;
+    try {
+      source = await openCamera(config.settings.camera);
+    } catch (err) {
+      URL.revokeObjectURL(refVideo.src);
+      return goHome(errorText(err));
+    }
+    showFollow(root, {
+      config,
+      saved,
+      refVideo,
+      source,
+      onExit: () => void goHome(),
+      onFinish: (summary) =>
+        renderFollowFinish(root, saved.name, summary, {
+          again: () => {
+            primeSpeech();
+            void follow(saved, videoBlob, unlockedVideo(videoBlob));
+          },
+          home: () => void goHome(),
+        }),
+    });
   };
 
   /** @param only 只練某一步（首頁點選單一動作時）；不給就練整套 */

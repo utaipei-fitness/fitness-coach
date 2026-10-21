@@ -97,6 +97,20 @@
     "duckVolume": 0.1       // 語音提示說話時，配樂暫時降到這個音量
   },
 
+  // ── 自選影片跟練（使用者自己選影片，邊播邊比對；影片只在使用者的裝置上分析）──
+  "follow": {
+    "fps": 10,              // 分析影片時每秒取幾幀（越多越細，但分析越久；手機建議 10）
+    "angles": [             // 要比對的角度（代號見 angles.json）
+      "leftShoulderRaise", "rightShoulderRaise", "leftElbow", "rightElbow",
+      "leftHip", "rightHip", "leftKnee", "rightKnee"
+    ],
+    "toleranceDeg": 25,     // 容許角度：與示範相差 ±25 度以內算跟上
+    "lagSec": 1.5,          // 允許比示範慢多少秒（跟著做通常會慢半拍，不會因此扣分）
+    "leadSec": 0.3,         // 允許比示範快多少秒
+    "segmentSec": 10,       // 成績報告中每幾秒算一段
+    "minCoverage": 0.3      // 一段時間裡看得到人的比例低於這個值，該段不計分
+  },
+
   // ── 評分（全部練習完後顯示）──
   // 整體分數 = 各動作「精確度」的平均（角度和標準動作的接近程度）；跳過的動作算 0 分
   //   差距在「容許角度 × perfectWithin」以內 = 100 分，剛好在容許邊界 = atToleranceScore 分，

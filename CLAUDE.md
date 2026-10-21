@@ -95,8 +95,11 @@ fitness_coach/
 │   │   ├── feedback.ts     最需要修正的 1～2 項、修正方向箭頭、使用者骨架對齊到標準骨架
 │   │   ├── voice.ts        語音教練（瀏覽器內建語音）與防囉嗦規則
 │   │   └── music.ts        背景配樂（語音說話時自動調小聲）
+│   ├── follow/
+│   │   └── follow-scorer.ts  自選影片跟練：每一刻和示範影片最像的姿勢比對、計分、分段成績（不碰畫面）
 │   ├── report/
 │   │   └── score.ts        評分：精確度與極簡報告（未完成／需要修正）
+│   ├── storage/            （video-library.ts：「我的影片」存在瀏覽器 IndexedDB）
 │   ├── storage/
 │   │   └── history.ts      練習紀錄（localStorage）與統計：連續天數、最近 7 天、各動作趨勢
 │   ├── assets/             圖片（臺北市立大學校徽）
@@ -158,6 +161,7 @@ config/*.json → 設定檢查（src/config）→ AppConfig ─┐
 - **評分**：引擎在 `StepResult` 記錄 `accuracyRatios`（偏差 ÷ 原本容許角度），`report/score.ts` 換算成精確度並產生極簡報告（未完成／需要修正）；整體分數中跳過的動作算 0 分。使用者不要「完整度」。
 - **雲端語音**：`scripts/generate-voices.mjs` 依 `voice-phrases.ts` 的句子產生音檔；網站播放順序：雲端音檔 → 裝置內建語音。金鑰只放 `.env.local`（`*.local` 已在 .gitignore），絕不寫進程式或文件。
 - **語音風格**：使用者要「自然、有活力、只講重點」（刻意的口令腔不要），提供女聲／男聲；不要「很好／完成」等多餘的話。
+- **自選影片跟練**（`src/follow/`、`src/ui/follow/`、`storage/video-library.ts`）：使用者的影片只在他的裝置上分析與儲存。和整套練習不同，沒有「步驟」，而是影片從頭播到尾、每一刻比對；比對角度與寬容度在 `settings.json` 的 `follow`。示範影片要在點擊當下用 `unlockedVideo()` 建立，iPhone 才能播放影片聲音。
 - **步驟類型**（`config/routine.json`）：`static` 靜態維持、`dynamic` 依序經過檢查點、`follow` 跟做（正面量不準角度的動作，人在畫面中做滿秒數即可，不判定角度）。
 - 正面拍攝時，往後蹲的後腳踝常被身體擋住（看不清楚 → 判定暫停）。這類動作只檢查看得清楚的關節；新增動作後，`reference-integration.test.ts` 會抓出這種問題。
 - **角度類型**（`config/angles.json`）：

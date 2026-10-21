@@ -2,6 +2,7 @@
 // 不碰畫面，方便測試；參數在 settings.json 的 setup。
 import { pointOf } from '../angles/compute';
 import type { ResolvedStep } from '../config/load';
+import type { AngleDef } from '../config/schema';
 import { POINT_LABELS, VIRTUAL_POINTS, type LandmarkName, type PointName } from '../pose/landmarks';
 import type { PoseFrame } from '../pose/types';
 
@@ -13,11 +14,18 @@ export function requiredPoints(steps: ResolvedStep[]): LandmarkName[] {
   const set = new Set<LandmarkName>();
   for (const s of steps) {
     if (s.type === 'follow') FULL_BODY.forEach((p) => set.add(p));
-    for (const a of s.angles) {
-      for (const p of a.def.points) {
-        if (p in VIRTUAL_POINTS) VIRTUAL_POINTS[p as keyof typeof VIRTUAL_POINTS].forEach((q) => set.add(q));
-        else set.add(p as LandmarkName);
-      }
+    for (const p of pointsForAngles(s.angles.map((a) => a.def))) set.add(p);
+  }
+  return [...set];
+}
+
+/** 一組角度會用到的身體部位（虛擬點換成實際關鍵點）；自選影片跟練也用這個 */
+export function pointsForAngles(defs: AngleDef[]): LandmarkName[] {
+  const set = new Set<LandmarkName>();
+  for (const d of defs) {
+    for (const p of d.points) {
+      if (p in VIRTUAL_POINTS) VIRTUAL_POINTS[p as keyof typeof VIRTUAL_POINTS].forEach((q) => set.add(q));
+      else set.add(p as LandmarkName);
     }
   }
   return [...set];

@@ -1,0 +1,220 @@
+/* ═══ 自選影片跟練 ═══ */
+
+/* 分析新影片 */
+.follow-setup .fs-preview {
+  position: relative;
+  max-width: 720px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000;
+}
+
+.fs-video {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* 不分析的範圍蓋上灰色 */
+.fs-shade {
+  position: absolute;
+  top: 0;
+  bottom: 48px;
+  background: rgba(30, 41, 59, 0.6);
+  pointer-events: none;
+}
+.fs-shade.left {
+  left: 0;
+}
+.fs-shade.right {
+  right: 0;
+}
+
+.fs-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0 0;
+  flex-wrap: wrap;
+}
+
+.fs-name {
+  font: inherit;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  min-width: 240px;
+}
+
+.fs-bar {
+  height: 14px;
+  background: var(--accent-soft);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.fs-bar-fill {
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  transition: width 0.2s;
+}
+
+.fs-result {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-top: 16px;
+}
+
+/* 跟練畫面：影片進度條 */
+.fv-time-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.fv-time {
+  flex: 1;
+  max-width: 420px;
+  height: 8px;
+  background: #cfdcdb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.fv-time-fill {
+  height: 100%;
+  width: 0;
+  background: var(--pr-teal);
+}
+
+.fv-time-text {
+  font-variant-numeric: tabular-nums;
+  color: var(--pr-sub);
+  font-size: clamp(12px, 1.8vmin, 16px);
+}
+
+/* 倒數 */
+.fv-countdown {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: clamp(80px, 25vmin, 220px);
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.fv-countdown[hidden] {
+  display: none;
+}
+
+/* 成績：每一段 */
+.ff-segments {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 16px;
+  display: grid;
+  gap: 6px;
+}
+
+.ff-segments li {
+  display: grid;
+  grid-template-columns: 7em 1fr 4em;
+  align-items: center;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ff-seg-bar {
+  height: 12px;
+  background: var(--accent-soft);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.ff-seg-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+.ff-seg-fill.score-high {
+  background: var(--ok);
+}
+.ff-seg-fill.score-mid {
+  background: #d97706;
+}
+.ff-seg-fill.score-low {
+  background: var(--bad);
+}
+
+.ff-parts li {
+  margin: 4px 0;
+}
+
+/* 首頁：我的影片 */
+.home-follow {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 16px 20px;
+  margin: 24px 0;
+  box-shadow: 0 1px 6px rgba(15, 42, 46, 0.08);
+}
+
+.home-follow h2 {
+  margin: 0 0 4px;
+}
+
+.my-videos {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: grid;
+  gap: 8px;
+}
+
+.my-videos li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.my-videos .mv-name {
+  flex: 1;
+  min-width: 160px;
+  font-weight: 700;
+}
+
+.my-videos button {
+  font-size: 0.95rem;
+  padding: 8px 14px;
+}
+
+/* 示範者範圍：分段選擇按鈕（淺色版） */
+.follow-setup .voice-options {
+  background: var(--accent-soft);
+}
+
+.follow-setup .voice-option {
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 16px;
+  background: transparent;
+  color: var(--fg);
+  font-size: 1rem;
+}
+
+.follow-setup .voice-option.active {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}

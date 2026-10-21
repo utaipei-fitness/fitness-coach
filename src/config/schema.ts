@@ -104,6 +104,15 @@ export const settingsSchema = strict({
     volume: z.number().min(0).max(1),
     duckVolume: z.number().min(0).max(1),
   }),
+  follow: strict({
+    fps: z.number().positive().max(30),
+    angles: z.array(angleId).min(1),
+    toleranceDeg: degrees,
+    lagSec: z.number().min(0).max(5),
+    leadSec: z.number().min(0).max(5),
+    segmentSec: z.number().positive(),
+    minCoverage: z.number().min(0).max(1),
+  }),
   scoring: strict({
     perfectWithin: z.number().min(0).max(1),
     atToleranceScore: z.number().min(0).max(100),

@@ -14,7 +14,7 @@ export const COLORS = {
 } as const;
 
 /** 依各角度的達標狀態，回傳「肢段 → 顏色」的函式（給 drawSkeleton 用） */
-export function segmentColorer(checks: AngleCheck[], config: AppConfig): (a: LandmarkName, b: LandmarkName) => string | undefined {
+export function segmentColorer(checks: Pick<AngleCheck, 'id' | 'value' | 'inRange'>[], config: AppConfig): (a: LandmarkName, b: LandmarkName) => string | undefined {
   const colors = new Map<string, string>();
   for (const c of checks) {
     if (c.value === null) continue;

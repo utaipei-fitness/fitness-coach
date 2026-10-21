@@ -6,7 +6,9 @@ import { availableGenders, detectedVoices, getChosenGender, previewVoice, primeS
 import logoUrl from '../assets/utaipei-logo.png';
 import { getChosenCameraId, listCameras, setChosenCameraId } from '../input/video-source';
 import { VARIANT_NAMES, type Variant } from '../reference/reference-data';
+import type { SavedVideo } from '../storage/video-library';
 import { configSummary } from './config-summary';
+import { myVideosSection } from './follow/my-videos';
 import { el } from './dom';
 
 export interface HomeActions {
@@ -18,6 +20,9 @@ export interface HomeActions {
   /** 切換站姿版／坐姿版 */
   onVariant(v: Variant): void;
   onHistory(): void;
+  /** 自選影片跟練 */
+  onFollowNew(file: File): void;
+  onFollowPlay(saved: SavedVideo, video: Blob): void;
 }
 
 export interface HomeState {
@@ -224,6 +229,16 @@ export function renderHome(root: HTMLElement, config: AppConfig, state: HomeStat
       ),
       el('h2', { class: 'home-section-title' }, '動作列表', el('span', { class: 'muted' }, '　點任一動作可以單獨練習')),
       el('ol', { class: 'home-steps' }, ...stepCards),
+      myVideosSection(
+        {
+          onNew: (file) => actions.onFollowNew(file),
+          onPlay: (saved, video) => {
+            primeSpeech();
+            actions.onFollowPlay(saved, video);
+          },
+        },
+        false,
+      ),
       el(
         'details',
         { class: 'home-more' },

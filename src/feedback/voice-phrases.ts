@@ -26,5 +26,11 @@ export function collectPhrases(config: AppConfig): string[] {
       if (a.hintHigh) phrases.add(a.hintHigh);
     }
   }
+  // 自選影片跟練：倒數前的提示、各比對部位的「注意＋部位」
+  phrases.add('準備開始');
+  for (const id of config.settings.follow.angles) {
+    const def = config.angles[id];
+    if (def) phrases.add(correctionText(undefined, def.name));
+  }
   return [...phrases];
 }

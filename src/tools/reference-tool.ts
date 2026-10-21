@@ -7,12 +7,9 @@ import './reference-tool.css';
 import { angleValue } from '../angles/compute';
 import { loadBundledConfig } from '../config/bundled';
 import type { AppConfig } from '../config/load';
-import { PoseEstimator } from '../pose/estimator';
-import { PosePipeline } from '../pose/pipeline';
 import {
   computeTargets,
   decodeReference,
-  encodeFrame,
   frameAt,
   loadReferenceFile,
   referenceFileName,
@@ -24,6 +21,7 @@ import {
   type ReferenceData,
   type ReferenceFile,
 } from '../reference/reference-data';
+import { extractPoses } from '../reference/extract';
 import { renderConfigErrors } from '../ui/config-error-view';
 import { el } from '../ui/dom';
 import { drawSkeleton } from '../ui/skeleton';
@@ -160,43 +158,15 @@ async function start(config: AppConfig): Promise<void> {
   await refresh(await loadReferenceFile(variant));
 }
 
-/** 逐幀擷取整支影片示範者範圍內的骨架 */
-export async function extractAll(
+/** 逐幀擷取整支影片示範者範圍內的骨架（實際做法在 reference/extract.ts，與「自選影片跟練」共用） */
+export function extractAll(
   video: HTMLVideoElement,
   config: AppConfig,
   area: [number, number],
   onProgress: (done: number, total: number) => void,
 ): Promise<ReferenceFile> {
   const { reference } = config.routine;
-  if (video.readyState < HTMLMediaElement.HAVE_METADATA) {
-    await new Promise((r) => video.addEventListener('loadedmetadata', r, { once: true }));
-  }
-  video.pause();
-  const estimator = await PoseEstimator.create(config.settings.pose);
-  const pipeline = new PosePipeline(estimator, config.settings.pose);
-
-  const sx = Math.round(video.videoWidth * area[0]);
-  const width = Math.round(video.videoWidth * area[1]) - sx;
-  const height = video.videoHeight;
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d', { willReadFrequently: false })!;
-
-  const total = Math.floor(video.duration * reference.fps) + 1;
-  const frames: (number[] | null)[] = [];
-  const base = performance.now();
-  for (let i = 0; i < total; i++) {
-    video.currentTime = Math.min(i / reference.fps + 0.001, video.duration);
-    await new Promise((r) => video.addEventListener('seeked', r, { once: true }));
-    ctx.drawImage(video, sx, 0, width, height, 0, 0, width, height);
-    const frame = pipeline.process(canvas, width, height, base + (i * 1000) / reference.fps);
-    frames.push(frame ? encodeFrame(frame) : null);
-    if (i % 10 === 0) onProgress(i, total);
-  }
-  estimator.close();
-  onProgress(total, total);
-  return { version: 1, video: reference.video, area, fps: reference.fps, model: config.settings.pose.model, width, height, frames };
+  return extractPoses(video, { pose: config.settings.pose, area, fps: reference.fps, videoName: reference.video, onProgress });
 }
 
 function drawCrop(canvas: HTMLCanvasElement, video: HTMLVideoElement, config: AppConfig, frame: ReturnType<typeof frameAt>): void {

@@ -97,7 +97,7 @@ export function parseConfigFiles(files: Partial<Record<string, string>>): LoadRe
 
   if (!settings || !anglesFile || !routine) return { ok: false, errors };
 
-  errors.push(...checkAngleSides(anglesFile), ...checkRoutineAngles(routine, anglesFile));
+  errors.push(...checkAngleSides(anglesFile), ...checkRoutineAngles(routine, anglesFile), ...checkFollowAngles(settings, anglesFile));
   if (errors.length > 0) return { ok: false, errors };
 
   return { ok: true, config: resolve(settings, anglesFile, routine) };
@@ -179,6 +179,16 @@ function checkAngleSides(anglesFile: AnglesFile): ConfigError[] {
     }
   }
   return errors;
+}
+
+/** settings.json 的 follow.angles（自選影片跟練要比對的角度）也必須在 angles.json 裡定義過 */
+function checkFollowAngles(settings: Settings, anglesFile: AnglesFile): ConfigError[] {
+  const known = Object.keys(anglesFile.angles);
+  return settings.follow.angles.flatMap((id, i) =>
+    id in anglesFile.angles
+      ? []
+      : [{ file: 'settings.json', ...formatLocation('settings.json', ['follow', 'angles', i], settings), message: `角度代號「${id}」在 angles.json 裡找不到${didYouMean(id, known)}` }],
+  );
 }
 
 /** routine.json 用到的角度代號，都必須在 angles.json 裡定義過 */
